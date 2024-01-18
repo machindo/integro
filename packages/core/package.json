@@ -1,5 +1,6 @@
 {
   "name": "integro",
+  "version": "0.1.1",
   "main": "src/index.ts",
   "module": "src/index.ts",
   "type": "module",
