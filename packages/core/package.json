@@ -1,0 +1,25 @@
+{
+  "name": "integro",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "type": "module",
+  "bin": {
+    "integro": "src/integro.ts"
+  },
+  "scripts": {
+    "generate-types": "bun typia generate --input src/_types --output src/types --project tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/nodemon": "^1.19.6"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "commander": "^11.1.0",
+    "nodemon": "^3.0.2",
+    "ts-morph": "^21.0.1",
+    "typia": "5.3.9"
+  }
+}

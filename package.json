@@ -1,0 +1,34 @@
+{
+  "name": "@integro/root",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+  },
+  "devDependencies": {
+    "@integro/eslint-config": "workspace:*",
+    "@integro/typescript-config": "workspace:*",
+    "prettier": "^3.1.0",
+    "turbo": "latest"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "bun@1.0.11",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "commander": "^11.1.0",
+    "just-curry-it": "^5.3.0",
+    "msgpackr": "^1.10.1",
+    "remeda": "^1.33.0",
+    "ts-morph": "^21.0.1",
+    "type-fest": "^4.9.0",
+    "typia": "^5.3.9",
+    "zod": "^3.22.4"
+  }
+}

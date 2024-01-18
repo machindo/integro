@@ -1,0 +1,13 @@
+{
+  "name": "@integro/demo-client",
+  "private": true,
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@integro/demo-server": "workspace:*",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
