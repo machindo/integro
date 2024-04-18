@@ -2,9 +2,15 @@
   "name": "@integro/demo-server",
   "private": true,
   "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "serve": "bun src/serve.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest",
-    "integro": "workspace:*"
+    "bun-plugin-typia": "^0.1.0",
+    "integro": "workspace:*",
+    "typia": "^6.0.3"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

@@ -1,9 +1,31 @@
-import { IncomingMessage, createServer } from "http";
+import { IncomingMessage, createServer } from "node:http";
 import { pack, unpack } from "msgpackr";
-import { join } from "path";
-import { getConfig } from "./getConfig";
+import { Middleware } from './types/Middleware';
 
-const port = process.env.PORT ?? process.env.NODE_PORT ?? 8000;
+export type ServerConfig = {
+  middleware?: Middleware[];
+  port?: number | string;
+};
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "OPTIONS, POST",
+  "Access-Control-Max-Age": 2592000, // 30 days
+};
+
+const getData = async (req: Request) => {
+  try {
+    const blob = await req.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+
+    return unpack(Buffer.from(arrayBuffer));
+  } catch {
+    return undefined;
+  }
+};
+
+const prop = ([firstProp, ...path]: string[], object: any): any =>
+  path.length ? prop(path, object[firstProp]) : object[firstProp];
 
 const pipe = <T = unknown>(
   value: T,
@@ -18,19 +40,8 @@ const getIncomingMessageBody = (
     const body: Uint8Array[] = [];
 
     incomingMessage.on("data", (chunk) => body.push(chunk));
-    incomingMessage.on("end", () => resolve(new Blob(body)));
+    incomingMessage.on("end", () => resolve(new Blob(body) as Blob));
   });
-
-const getData = async (req: Request) => {
-  try {
-    const blob = await req.blob();
-    const arrayBuffer = await blob.arrayBuffer();
-
-    return unpack(Buffer.from(arrayBuffer));
-  } catch {
-    return undefined;
-  }
-};
 
 const toRequest = async (incomingMessage: IncomingMessage) =>
   new Request(`http://localhost${incomingMessage.url ?? ""}`, {
@@ -39,54 +50,23 @@ const toRequest = async (incomingMessage: IncomingMessage) =>
     body: await getIncomingMessageBody(incomingMessage),
   });
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "OPTIONS, POST",
-  "Access-Control-Max-Age": 2592000, // 30 days
-};
-
-const serve = async () => {
-  const cwd = process.cwd();
-  const config = await getConfig();
-  const root = join(cwd, config?.root ?? "");
-  const validatorPath = join(cwd, config?.out ?? ".integro", "server/types.ts");
-
+export const serve = async (app: object, {
+  middleware,
+  port = process.env.PORT ?? process.env.NODE_PORT ?? 8000
+}: ServerConfig) => {
   const handleRequest = async (req: Request): Promise<Response> => {
     try {
-      req = pipe(req, ...(config?.middleware ?? []));
+      req = pipe(req, ...(middleware ?? []));
     } catch (e) {
       return new Response(pack((e as Error).message), { status: 403 });
     }
-
-    const fnPath = new URL(req.url).pathname.slice(1);
-    const fnName = fnPath.match(/[^\/]*$/)?.[0] ?? "";
-    const module = await import(join(root, fnPath));
-    const handler = module[fnName] ?? module.default;
+    const { args, path } = await getData(req);
+    const handler = prop(path, app);
 
     if (typeof handler !== "function")
       return new Response(undefined, { status: 404 });
 
-    const props = await getData(req);
-    const validators = await import(validatorPath);
-    const validator = validators[
-      `validate_${fnPath.replaceAll("/", "_")}` as keyof typeof validators
-    ] as (typeof validators)[keyof typeof validators] | undefined;
-
-    if (!validator) {
-      console.warn(`No validator found for ${fnName}`);
-    }
-
-    const validation = validator?.(props) ?? {
-      success: true,
-      errors: [],
-      data: props,
-    };
-
-    if (!validation.success) {
-      return new Response(pack(validation.errors), { status: 403 });
-    }
-
-    const res = (await handler(props)) ?? {};
+    const res = (await handler(...args)) ?? {};
 
     return new Response(pack(res));
   };
@@ -123,5 +103,3 @@ const serve = async () => {
 
   return server;
 };
-
-export const server = serve();

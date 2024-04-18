@@ -1,8 +1,8 @@
 import { artists } from "../../data/artists.js";
 
-export function getArtist(props: { params: { name: string } }) {
+export async function getArtist({ name }: { name: string }) {
   return {
-    name: props.params.name,
-    instruments: artists[props.params.name] ?? [],
+    name: name,
+    instruments: artists[name] ?? [],
   };
 }
