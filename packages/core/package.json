@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "commander": "^11.1.0",
+    "msgpackr": "^1.10.1",
     "nodemon": "^3.0.2",
     "ts-morph": "^21.0.1",
     "typia": "5.3.9"
