@@ -53,7 +53,7 @@ const toRequest = async (incomingMessage: IncomingMessage) =>
 export const serve = async (app: object, {
   middleware,
   port = process.env.PORT ?? process.env.NODE_PORT ?? 8000
-}: ServerConfig) => {
+}: ServerConfig = {}) => {
   const handleRequest = async (req: Request): Promise<Response> => {
     try {
       req = pipe(req, ...(middleware ?? []));
