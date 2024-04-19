@@ -15,11 +15,11 @@ const pipe = <T = unknown>(
 
 const post = async ({
   url,
-  middlewares = [],
+  middlewares,
   data,
 }: {
   url: string;
-  middlewares?: Middleware[];
+  middlewares: Middleware[];
   data: {
     path: string[];
     args: any[];
@@ -46,15 +46,15 @@ const post = async ({
   return unpacked;
 };
 
-export const createClient = <T extends object>(host: string, config: ClientConfig = {}) =>
+export const createClient = <T extends object>(url = '/', { middlewares = [] }: ClientConfig = {}) =>
   new DeepProxy({}, {
     get() {
       return this.nest(() => { })
     },
     async apply(_target, _thisArg, args) {
       const data = await post({
-        url: `${host}/${config.path}`,
-        middlewares: config.middlewares,
+        url,
+        middlewares,
         data: {
           path: this.path,
           args
