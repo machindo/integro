@@ -17,5 +17,3 @@ export const app = {
     upload: uploadPhoto,
   }
 };
-
-export type App = typeof app;

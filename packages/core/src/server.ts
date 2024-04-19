@@ -1,11 +1,21 @@
 import { IncomingMessage, createServer } from "node:http";
 import { pack, unpack } from "msgpackr";
+import z from 'zod';
 import { Middleware } from './types/Middleware';
 
 export type ServerConfig = {
   middleware?: Middleware[];
   port?: number | string;
 };
+
+class PathError extends Error {};
+
+const Data = z.object({
+  path: z.string().min(1).array().nonempty(),
+  args: z.any().array()
+})
+
+type Data = z.infer<typeof Data>;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,18 +24,19 @@ const corsHeaders = {
 };
 
 const getData = async (req: Request) => {
-  try {
-    const blob = await req.blob();
-    const arrayBuffer = await blob.arrayBuffer();
+  const blob = await req.blob();
+  const arrayBuffer = await blob.arrayBuffer();
 
-    return unpack(Buffer.from(arrayBuffer));
-  } catch {
-    return undefined;
-  }
+  return Data.parse(unpack(Buffer.from(arrayBuffer)));
 };
 
-const prop = ([firstProp, ...path]: string[], object: any): any =>
-  path.length ? prop(path, object[firstProp]) : object[firstProp];
+const prop = ([firstProp, ...path]: string[], object: any): any => {
+  try {
+    return path.length ? prop(path, object[firstProp]) : object[firstProp];
+  } catch (e) {
+    throw new PathError();
+  }
+}
 
 const pipe = <T = unknown>(
   value: T,
@@ -60,15 +71,34 @@ export const serve = async (app: object, {
     } catch (e) {
       return new Response(pack((e as Error).message), { status: 403 });
     }
-    const { args, path } = await getData(req);
-    const handler = prop(path, app);
 
-    if (typeof handler !== "function")
-      return new Response(undefined, { status: 404 });
+    try {
+      const { args, path } = await getData(req);
 
-    const res = (await handler(...args)) ?? {};
+      try {
+        const handler = prop(path, app);
 
-    return new Response(pack(res));
+        if (typeof handler !== "function") {
+          throw new PathError('handler is not a function');
+        }
+  
+        const res = (await handler(...args)) ?? {};
+
+        return new Response(pack(res));
+      } catch (e) {
+        if (e instanceof PathError) {
+          return new Response(pack(`Path "${path.join('.')}" could not be found in the app.`), { status: 404 });
+        }
+
+        if (e instanceof Error) {
+          return new Response(pack(e.message), { status: 404 });
+        }
+        
+        return new Response('Something went wrong.', { status: 400 });
+      }
+    } catch (e) {
+      return new Response(pack('Could not parse body.'), { status: 400 });
+    }
   };
 
   const server = createServer(async (incomingMessage, serverResponse) => {
@@ -88,8 +118,6 @@ export const serve = async (app: object, {
       serverResponse.statusMessage = res.statusText;
       serverResponse.end(Buffer.from(await (await res.blob()).arrayBuffer()));
     } catch (e) {
-      console.log("e:", e);
-
       serverResponse.statusCode = 403;
       serverResponse.end(
         pack(e instanceof Error ? e.message : "An error occured")

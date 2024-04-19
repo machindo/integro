@@ -1,7 +1,7 @@
 import { createClient } from 'integro';
 
-import type { App } from './app';
+import type { app } from './app';
 
-const createAppClient = createClient<App>;
+const createAppClient = createClient<typeof app>;
 
 export { createAppClient as createClient };

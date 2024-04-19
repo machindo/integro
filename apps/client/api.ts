@@ -8,5 +8,6 @@ console.log('mingus:', mingus)
 const newArtist1 = await api.artists.create({ name: 'john' })
 console.log('newArtist1:', newArtist1)
 
-const newArtist2 = await api.artists.create({ name: '' })
+// @ts-ignore
+const newArtist2 = await api.artists.creater({ name: '' })
 console.log('newArtist2:', newArtist2)
