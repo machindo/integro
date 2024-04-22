@@ -7,5 +7,5 @@ export const uploadPhoto = async ({
 }) => {
   await Bun.write(`./photos/${name}`, data);
 
-  return { status: 201 };
+  return { status: 204 };
 };

@@ -1,19 +1,14 @@
-import { createArtist } from './api/artists/createArtist.js';
+import { defineApp, lazy } from 'integro';
 import { getArtist } from './api/artists/getArtist.js';
 import getArtists from './api/artists/getArtists.js';
 import { upsertArtist } from './api/artists/upsertArtist.js';
-import { getPhoto } from './api/photos/getPhoto.js';
-import { uploadPhoto } from './api/photos/uploadPhoto.js';
 
-export const app = {
+export const app = defineApp({
   artists: {
-    create: createArtist,
+    create: lazy(() => import('./api/artists/createArtist').then(module => module.createArtist)),
     get: getArtist,
     list: getArtists,
     upsert: upsertArtist,
   },
-  photos: {
-    get: getPhoto,
-    upload: uploadPhoto,
-  }
-};
+  photos: lazy(() => import('./photos').then(module => module.photos))
+});

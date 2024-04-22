@@ -1,10 +1,11 @@
 import { pack, unpack } from 'msgpackr';
 import DeepProxy from 'proxy-deep';
 import { Middleware } from './types/Middleware';
+import { IntegroApp } from './types/IntegroApp';
+import { IntegroClient } from './types/IntegroClient';
 
 export type ClientConfig = {
   middlewares?: Middleware[];
-  path?: string;
 };
 
 const pipe = <T = unknown>(
@@ -46,8 +47,8 @@ const post = async ({
   return unpacked;
 };
 
-export const createClient = <T extends object>(url = '/', { middlewares = [] }: ClientConfig = {}) =>
-  new DeepProxy({}, {
+export const createClient = <T extends IntegroApp>(url = '/', { middlewares = [] }: ClientConfig = {}) =>
+  new DeepProxy({} as IntegroClient<T>, {
     get() {
       return this.nest(() => { })
     },
@@ -63,4 +64,4 @@ export const createClient = <T extends object>(url = '/', { middlewares = [] }: 
 
       return data;
     }
-  }) as T;
+  });

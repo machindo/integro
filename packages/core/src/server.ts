@@ -1,7 +1,9 @@
 import { IncomingMessage, createServer } from "node:http";
 import { pack, unpack } from "msgpackr";
 import z from 'zod';
+import { IntegroApp } from './types/IntegroApp';
 import { Middleware } from './types/Middleware';
+import { isLazy } from '.';
 
 export type ServerConfig = {
   middleware?: Middleware[];
@@ -30,9 +32,11 @@ const getData = async (req: Request) => {
   return Data.parse(unpack(Buffer.from(arrayBuffer)));
 };
 
-const prop = ([firstProp, ...path]: string[], object: any): any => {
+const resolveProp = async ([firstProp, ...path]: string[], object: any): Promise<any> => {
   try {
-    return path.length ? prop(path, object[firstProp]) : object[firstProp];
+    const property = isLazy(object[firstProp]) ? await object[firstProp]() : object[firstProp];
+
+    return path.length ? resolveProp(path, property) : property;
   } catch (e) {
     throw new PathError();
   }
@@ -61,7 +65,7 @@ const toRequest = async (incomingMessage: IncomingMessage) =>
     body: await getIncomingMessageBody(incomingMessage),
   });
 
-export const serve = async (app: object, {
+export const serve = async (app: IntegroApp, {
   middleware,
   port = process.env.PORT ?? process.env.NODE_PORT ?? 8000
 }: ServerConfig = {}) => {
@@ -76,7 +80,7 @@ export const serve = async (app: object, {
       const { args, path } = await getData(req);
 
       try {
-        const handler = prop(path, app);
+        const handler = await resolveProp(path, app);
 
         if (typeof handler !== "function") {
           throw new PathError('handler is not a function');
