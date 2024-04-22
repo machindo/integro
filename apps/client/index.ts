@@ -1,44 +1,30 @@
-import { createClient } from "@integro/demo-server/dist/client";
+import { createApiClient } from '@integro/demo-server';
 
-const authToken =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
-
-const client = createClient({
-  host: "http://localhost:8000",
-  middlewares: [
-    (req) => {
-      const newReq = req.clone();
-
-      newReq.headers.append("Authentication", `Bearer ${authToken}`);
-
-      return newReq;
-    },
-  ],
+export const api = createApiClient('http://localhost:8000', {
+  middleware: []
 });
 
-const version = await client.getVersion();
-console.log("version:", version);
+const mingus = await api.artists.get('mingus');
+console.log('mingus:', mingus)
 
-const miles = await client.artists.getArtist({ params: { name: "miles" } });
-console.log("miles:", miles);
+const newArtist1 = await api.artists.create({ name: 'john' })
+console.log('newArtist1:', newArtist1)
 
-const monk = await client.artists.createArtist({
-  json: { name: "monk", dob: new Date("1917-10-10") },
-});
-console.log("monk:", monk);
+const newArtist1Again = await api.artists.upsert({ json: { name: 'joe' }, params: { name: 'john' } })
+console.log('newArtist1Again:', newArtist1Again)
 
-const res = await client.artists.getArtists({});
-console.log("res:", res);
+// @ts-ignore
+const res = await api.repeatString(5, 'echo');
+console.log('res:', res)
 
-const uploadRes = await client.photos.uploadPhoto({
+// @ts-ignore
+const newArtist2 = await api.artists.creater({ name: '' })
+console.log('newArtist2:', newArtist2)
+
+const uploadRes = await api.photos.upload({
   name: "Thelonious-Monk.webp",
   data: new Uint8Array(
     await Bun.file("./tmp/Thelonious-Monk.webp").arrayBuffer()
   ),
 });
 console.log("uploadRes:", uploadRes);
-
-const photoRes = await client.photos.getPhoto({
-  name: "Thelonious-Monk.webp",
-});
-Bun.write("./tmp/output.webp", photoRes);

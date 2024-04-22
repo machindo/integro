@@ -1,11 +1,10 @@
 import { pack, unpack } from 'msgpackr';
-import DeepProxy from 'proxy-deep';
 import { Middleware } from './types/Middleware';
-import { IntegroApp } from './types/IntegroApp';
+import { Handler, IntegroApp } from './types/IntegroApp';
 import { IntegroClient } from './types/IntegroClient';
 
 export type ClientConfig = {
-  middlewares?: Middleware[];
+  middleware?: Middleware[];
 };
 
 const pipe = <T = unknown>(
@@ -16,11 +15,11 @@ const pipe = <T = unknown>(
 
 const post = async ({
   url,
-  middlewares,
+  middleware,
   data,
 }: {
   url: string;
-  middlewares: Middleware[];
+  middleware: Middleware[];
   data: {
     path: string[];
     args: any[];
@@ -31,7 +30,7 @@ const post = async ({
       method: "POST",
       body: pack(data),
     }),
-    ...middlewares
+    ...middleware
   );
   const res = await fetch(req);
   const blob = await res.blob();
@@ -47,21 +46,38 @@ const post = async ({
   return unpacked;
 };
 
-export const createClient = <T extends IntegroApp>(url = '/', { middlewares = [] }: ClientConfig = {}) =>
-  new DeepProxy({} as IntegroClient<T>, {
-    get() {
-      return this.nest(() => { })
-    },
-    async apply(_target, _thisArg, args) {
-      const data = await post({
-        url,
-        middlewares,
-        data: {
-          path: this.path,
-          args
-        }
-      })
+const createProxy = <
+  T extends object | Handler,
+  U extends (path: string[], args: any[]) => any = (path: string[], args: any[]) => any
+>(apply: U, path: string[] = []): T =>
+  new Proxy(() => {}, {
+    get: (_target, key) => createProxy(apply, [...path, key.toString()]),
+    apply: (_target, _thisArg, args) => apply(path, args)
+  }) as T;
 
-      return data;
+export const createClient = <T extends IntegroApp>(url = '/', { middleware = [] }: ClientConfig = {}) =>
+  createProxy<IntegroClient<T>>((path, args) => post({
+    url,
+    middleware,
+    data: {
+      path,
+      args
     }
-  });
+  }));
+  // new DeepProxy({} as IntegroClient<T>, {
+  //   get() {
+  //     return this.nest(() => { })
+  //   },
+  //   async apply(_target, _thisArg, args) {
+  //     const data = await post({
+  //       url,
+  //       middleware,
+  //       data: {
+  //         path: this.path,
+  //         args
+  //       }
+  //     })
+
+  //     return data;
+  //   }
+  // });

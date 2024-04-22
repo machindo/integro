@@ -1,9 +1,8 @@
-import { IncomingMessage, createServer } from "node:http";
 import { pack, unpack } from "msgpackr";
-import z from 'zod';
+import { IncomingMessage, createServer } from "node:http";
+import { isLazy } from '.';
 import { IntegroApp } from './types/IntegroApp';
 import { Middleware } from './types/Middleware';
-import { isLazy } from '.';
 
 export type ServerConfig = {
   middleware?: Middleware[];
@@ -11,13 +10,6 @@ export type ServerConfig = {
 };
 
 class PathError extends Error {};
-
-const Data = z.object({
-  path: z.string().min(1).array().nonempty(),
-  args: z.any().array()
-})
-
-type Data = z.infer<typeof Data>;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,8 +20,13 @@ const corsHeaders = {
 const getData = async (req: Request) => {
   const blob = await req.blob();
   const arrayBuffer = await blob.arrayBuffer();
+  const data = unpack(Buffer.from(arrayBuffer));
 
-  return Data.parse(unpack(Buffer.from(arrayBuffer)));
+  if (!Array.isArray(data.path) || typeof data.path[0] !== 'string' || !Array.isArray(data.args)) {
+    throw new Error('Data is malformed');
+  }
+    
+  return data;
 };
 
 const resolveProp = async ([firstProp, ...path]: string[], object: any): Promise<any> => {
@@ -130,7 +127,7 @@ export const serve = async (app: IntegroApp, {
   });
 
   server.listen(port, undefined, () =>
-    console.log(`Integro listening on port ${port} ...`)
+    console.info(`Integro listening on port ${port} ...`)
   );
 
   return server;

@@ -14,5 +14,8 @@
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
   }
 }

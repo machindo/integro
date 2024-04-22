@@ -1,8 +1,8 @@
 import { artists } from "../../data/artists.js";
 
-export async function getArtist({ name }: { name: string }) {
+export async function getArtist(id: string) {
   return {
-    name: name,
-    instruments: artists[name] ?? [],
+    name: id,
+    instruments: artists[id] ?? [],
   };
 }

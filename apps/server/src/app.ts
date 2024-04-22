@@ -1,4 +1,5 @@
 import { defineApp, lazy } from 'integro';
+import z from 'zod';
 import { getArtist } from './api/artists/getArtist.js';
 import getArtists from './api/artists/getArtists.js';
 import { upsertArtist } from './api/artists/upsertArtist.js';
@@ -10,5 +11,8 @@ export const app = defineApp({
     list: getArtists,
     upsert: upsertArtist,
   },
-  photos: lazy(() => import('./photos').then(module => module.photos))
+  photos: lazy(() => import('./photos').then(module => module.photos)),
+  repeatString: z.function().args(z.string(), z.number()).implement(
+    (text, times) => Array(times).fill(text).join(', ')
+  ),
 });
