@@ -1,4 +1,4 @@
-import { defineApp, lazy } from 'integro';
+import { defineApp, guard, lazy } from 'integro';
 import z from 'zod';
 import { getArtist } from './api/artists/getArtist.js';
 import getArtists from './api/artists/getArtists.js';
@@ -10,6 +10,18 @@ export const app = defineApp({
     get: getArtist,
     list: getArtists,
     upsert: upsertArtist,
+    delete: guard((req) => {
+      if (!req.headers.get('Authorization')) throw new Error('User does not have permission to delete artists!');
+
+      return (id: string) => `Deleted ${id} forever and ever!`;
+    }),
+    admin: guard((req => {
+      if (req.headers.get('Authorization') !== 'admin') throw new Error('User does not have admin permissions!');
+
+      return {
+        deleteAll: () => 'Deleted all!'
+      }
+    }))
   },
   photos: lazy(() => import('./photos').then(module => module.photos)),
   repeatString: z.function().args(z.string(), z.number()).implement(

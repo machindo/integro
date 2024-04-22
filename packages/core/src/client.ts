@@ -64,20 +64,4 @@ export const createClient = <T extends IntegroApp>(url = '/', { middleware = [] 
       args
     }
   }));
-  // new DeepProxy({} as IntegroClient<T>, {
-  //   get() {
-  //     return this.nest(() => { })
-  //   },
-  //   async apply(_target, _thisArg, args) {
-  //     const data = await post({
-  //       url,
-  //       middleware,
-  //       data: {
-  //         path: this.path,
-  //         args
-  //       }
-  //     })
 
-  //     return data;
-  //   }
-  // });

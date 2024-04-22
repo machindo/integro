@@ -1,6 +1,6 @@
 import { pack, unpack } from "msgpackr";
 import { IncomingMessage, createServer } from "node:http";
-import { isLazy } from '.';
+import { isGuarded, isLazy } from '.';
 import { IntegroApp } from './types/IntegroApp';
 import { Middleware } from './types/Middleware';
 
@@ -29,14 +29,15 @@ const getData = async (req: Request) => {
   return data;
 };
 
-const resolveProp = async ([firstProp, ...path]: string[], object: any): Promise<any> => {
-  try {
-    const property = isLazy(object[firstProp]) ? await object[firstProp]() : object[firstProp];
+const resolveProp = async ([firstProp, ...path]: string[], object: any, request: Request): Promise<any> => {
+  const property = object[firstProp];
 
-    return path.length ? resolveProp(path, property) : property;
-  } catch (e) {
-    throw new PathError();
-  }
+  if (!property) throw new PathError();
+
+  const resolvedLazyProperty = isLazy(property) ? await property() : property;
+  const resolvedGuardedProperty = isGuarded(resolvedLazyProperty) ? await resolvedLazyProperty(request) : resolvedLazyProperty;
+
+  return path.length ? resolveProp(path, resolvedGuardedProperty, request) : resolvedGuardedProperty;
 }
 
 const pipe = <T = unknown>(
@@ -77,7 +78,7 @@ export const serve = async (app: IntegroApp, {
       const { args, path } = await getData(req);
 
       try {
-        const handler = await resolveProp(path, app);
+        const handler = await resolveProp(path, app, req);
 
         if (typeof handler !== "function") {
           throw new PathError('handler is not a function');
