@@ -143,7 +143,7 @@ export const app = defineApp({
 
 ## Lazy loading
 
-If your server app is large, it may be expensive to initialize it all at once. In this case, you can use integro's `lazy()` helper function along with dynamic imports.
+If your server app is large, it may be expensive to initialize it all at once. In this case, you can use integro's `unwrap()` helper function along with dynamic imports.
 
 ```ts
 // artists.ts

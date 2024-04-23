@@ -1,6 +1,6 @@
 {
   "name": "integro",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "main": "dist/index.js",
   "browser": "dist/browser.js",
   "module": "dist/index.js",
@@ -14,10 +14,11 @@
   "repository": "jpsilva/integro",
   "keywords": ["web", "app", "server", "e2e", "router", "api", "middleware", "rack"],
   "scripts": {
-    "build": "bun build:server && bun build:browser",
+    "build": "rm -rf dist && bun build:server && bun build:browser && bun build:types",
     "build:browser": "bun build src/browser.ts --outdir=dist --target browser",
-    "build:server": "tsc && bun build src/index.ts --outdir=dist --target node",
-    "prepublish": "bun run build"
+    "build:server": "bun build src/index.ts --outdir=dist --target node",
+    "build:types": "tsc",
+    "prepublishOnly": "rm tsconfig.tsbuildinfo; bun run build"
   },
   "devDependencies": {
     "@types/bun": "latest",
