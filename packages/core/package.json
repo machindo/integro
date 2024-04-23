@@ -2,19 +2,26 @@
   "name": "integro",
   "version": "0.2.6",
   "main": "dist/index.js",
+  "browser": "dist/browser.js",
   "module": "dist/index.js",
   "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./browser": "./dist/browser.js"
+  },
   "files": ["dist"],
   "license": "MIT",
   "repository": "jpsilva/integro",
   "keywords": ["web", "app", "server", "e2e", "router", "api", "middleware", "rack"],
   "scripts": {
-    "build": "tsc && bun build src/index.ts --outdir=dist --target node",
+    "build": "bun build:server && bun build:browser",
+    "build:browser": "bun build src/browser.ts --outdir=dist --target browser",
+    "build:server": "tsc && bun build src/index.ts --outdir=dist --target node",
     "prepublish": "bun run build"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/nodemon": "^1.19.6",
+    "@types/node": "latest",
     "del-cli": "^5.1.0",
     "type-fest": "^4.15.0",
     "typescript": "^5.0.0"

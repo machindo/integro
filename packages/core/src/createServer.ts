@@ -1,21 +1,21 @@
 import { pack, unpack } from "msgpackr";
-import { IncomingMessage, createServer } from "node:http";
-import { isGuarded, isLazy } from '.';
-import { IntegroApp } from './types/IntegroApp';
-import { Middleware } from './types/Middleware';
+import { IncomingMessage, OutgoingHttpHeaders, createServer as createNodeServer } from "node:http";
+import { IntegroApp } from './types/IntegroApp.js';
+import { Middleware } from './types/Middleware.js';
+import { pipe } from './utils/pipe.js';
+import { isResponseInitObject } from './respondWith.js';
+import { isUnwrappable } from './index.js';
 
 export type ServerConfig = {
+  headers?: OutgoingHttpHeaders;
   middleware?: Middleware[];
-  port?: number | string;
 };
 
 class PathError extends Error {};
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "OPTIONS, POST",
-  "Access-Control-Max-Age": 2592000, // 30 days
-};
+const accessHeaders = {
+  "Access-Control-Allow-Methods": "OPTIONS, POST"
+} as const;
 
 const getData = async (req: Request) => {
   const blob = await req.blob();
@@ -29,22 +29,18 @@ const getData = async (req: Request) => {
   return data;
 };
 
-const resolveProp = async ([firstProp, ...path]: string[], object: any, request: Request): Promise<any> => {
-  const property = object[firstProp];
+const resolveProp = async (
+  { path: [firstProp, ...path], app, request }:
+  { path: string[], app: IntegroApp, request: Request }
+): Promise<IntegroApp> => {
+  const property = app && (typeof app === 'object' ? app[firstProp] : undefined);
 
   if (!property) throw new PathError();
 
-  const resolvedLazyProperty = isLazy(property) ? await property() : property;
-  const resolvedGuardedProperty = isGuarded(resolvedLazyProperty) ? await resolvedLazyProperty(request) : resolvedLazyProperty;
+  const unwrappedProperty = isUnwrappable(property) ? await property(request) : property;
 
-  return path.length ? resolveProp(path, resolvedGuardedProperty, request) : resolvedGuardedProperty;
+  return path.length ? resolveProp({ path, app: unwrappedProperty, request }) : unwrappedProperty;
 }
-
-const pipe = <T = unknown>(
-  value: T,
-  next?: (value: T) => T,
-  ...rest: ((value: T) => T)[]
-): T => (next ? pipe(next(value), ...rest) : value);
 
 const getIncomingMessageBody = (
   incomingMessage: IncomingMessage
@@ -63,28 +59,29 @@ const toRequest = async (incomingMessage: IncomingMessage) =>
     body: await getIncomingMessageBody(incomingMessage),
   });
 
-export const serve = async (app: IntegroApp, {
-  middleware,
-  port = process.env.PORT ?? process.env.NODE_PORT ?? 8000
-}: ServerConfig = {}) => {
-  const handleRequest = async (req: Request): Promise<Response> => {
+export const createServer = (app: IntegroApp, { headers, middleware }: ServerConfig = {}) => {
+  const handleRequest = async (request: Request): Promise<Response> => {
     try {
-      req = pipe(req, ...(middleware ?? []));
+      request = pipe(request, ...(middleware ?? []));
     } catch (e) {
       return new Response(pack((e as Error).message), { status: 403 });
     }
 
     try {
-      const { args, path } = await getData(req);
+      const { args, path } = await getData(request);
 
       try {
-        const handler = await resolveProp(path, app, req);
+        const handler = await resolveProp({ path, app, request });
 
         if (typeof handler !== "function") {
           throw new PathError('handler is not a function');
         }
   
-        const res = (await handler(...args)) ?? {};
+        const res = await handler(...args);
+
+        if (isResponseInitObject(res)) {
+          return new Response(pack(res.data), res.responseInit)
+        }
 
         return new Response(pack(res));
       } catch (e) {
@@ -96,15 +93,15 @@ export const serve = async (app: IntegroApp, {
           return new Response(pack(e.message), { status: 404 });
         }
         
-        return new Response('Something went wrong.', { status: 400 });
+        return new Response(pack('Something went wrong.'), { status: 400 });
       }
     } catch (e) {
       return new Response(pack('Could not parse body.'), { status: 400 });
     }
   };
 
-  const server = createServer(async (incomingMessage, serverResponse) => {
-    serverResponse.writeHead(204, corsHeaders);
+  return createNodeServer(async (incomingMessage, serverResponse) => {
+    serverResponse.writeHead(204, { ...headers, ...accessHeaders });
 
     try {
       if (incomingMessage.method === "OPTIONS") {
@@ -118,6 +115,7 @@ export const serve = async (app: IntegroApp, {
 
       serverResponse.statusCode = res.status;
       serverResponse.statusMessage = res.statusText;
+      res.headers.forEach((value, key) => serverResponse.setHeader(key, value));
       serverResponse.end(Buffer.from(await (await res.blob()).arrayBuffer()));
     } catch (e) {
       serverResponse.statusCode = 403;
@@ -126,10 +124,4 @@ export const serve = async (app: IntegroApp, {
       );
     }
   });
-
-  server.listen(port, undefined, () =>
-    console.info(`Integro listening on port ${port} ...`)
-  );
-
-  return server;
 };

@@ -1,18 +1,18 @@
 import React, { useState } from "react";
 import useSWRMutation from "swr/mutation";
 import "./App.css";
-import { client, createMutatationPair, useClientMutate } from "./client";
+import { api } from "./client";
+import { useSWRConfig } from 'swr';
+import { Artist } from '@integro/demo-server/src/types/Artist';
 
 export const CreateArtist: React.FC = () => {
   const [name, setName] = useState("");
-  const mutate = useClientMutate();
-  const { isMutating, trigger } = useSWRMutation(
-    ...createMutatationPair(client.artists.createArtist)
-  );
+  const { mutate } = useSWRConfig();
+  const { isMutating, trigger } = useSWRMutation('createArtist', (_: string, { arg }: { arg: Artist }) => api.artists.create(arg));
   const save = async () => {
     setName("");
 
-    await trigger({ json: { name } });
+    await trigger({ name: 'Charles' });
     await mutate("artists/getArtists");
   };
 

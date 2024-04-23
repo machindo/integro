@@ -8,6 +8,9 @@ export const api = createApiClient('http://localhost:8000', {
   }]
 });
 
+const loginRes = await api.auth.login('1', '2');
+console.log('loginRes:', loginRes)
+
 // const mingus = await api.artists.get('mingus');
 // console.log('mingus:', mingus)
 

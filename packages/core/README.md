@@ -37,20 +37,24 @@ Start up the server with one line:
 ```ts
 // server.ts
 
-import { serve } from 'integro';
+import { createServer } from 'integro';
 import { app } from './app';
 
-await serve(app, { port: 8000 });
+const server = createServer(app);
+
+server.listen(8000, undefined, () =>
+  console.info(`Integro listening on port 8000 ...`)
+);
 ```
 
 ### Client side
 
-Create the client-side api proxy object.
+Create the client-side api proxy object. When using in a browser, `createClient` must be imported from 'integro/browser'. If your client is in node or bun, then `createClient` may be imported from either 'integro' or 'integro/browser'.
 
 ```ts
 // api.ts
 
-import { createClient } from 'integro';
+import { createClient } from 'integro/browser';
 import type { App } from '@repo/api';
 
 export const api = createClient<App>('http://localhost:8000');
@@ -73,7 +77,7 @@ Wouldn't be easier if your client app didn't need to depend on integro? Of cours
 ```ts
 // Server repo
 
-import { createClient } from 'integro';
+import { createClient } from 'integro/browser';
 import type { app } from './app';
 
 export const createApiClient = createClient<typeof app>;
@@ -162,13 +166,13 @@ export const photos = {
 
 ```ts
 // app.ts
-import { lazy } from 'integro';
+import { unwrap } from 'integro';
 import { artists } from 'artists';
 
 export const app = {
   version: () => '1.0.0',
   artists, // regular, non-lazy import
-  photos: lazy(() => import('./photos').then(module => module.photos)), // lazy import
+  photos: unwrap(() => import('./photos').then(module => module.photos)), // lazy import
 }
 ```
 
@@ -183,6 +187,9 @@ Integro supports middleware functions for providing basic authentication or othe
 ```ts
 // Server
 
+import { createServer } from 'integro';
+import { app } from './app';
+
 const checkAuthentication = (req: Request) => {
   const token = req.headers.get('Authorization');
 
@@ -191,10 +198,11 @@ const checkAuthentication = (req: Request) => {
   return req;
 }
 
-serve(app, {
-  port: 8000,
-  middleware: [checkAuthentication]
-});
+const server = createServer(app, { middleware: [checkAuthentication] });
+
+server.listen(8000, undefined, () =>
+  console.info(`Integro listening on port 8000 ...`)
+);
 ```
 
 ```ts
@@ -210,6 +218,92 @@ const authenticate = (req: Request) => {
 
 createClient('http://localhost:8000', {
   middleware: [authenticate]
+});
+```
+
+## Fine-grained authentication/authorization guard
+
+In addition to usage for lazy loading, the `unwrap` function can also be used to inspect the request object.
+
+```ts
+import { unwrap } from 'integro';
+
+export const app = {
+  admin: unwrap(request => {
+    const token = request.headers.get('Authorization');
+
+    if (!isAdmin(token)) {
+      throw new Error('User is not authenticated');
+    }
+
+    return {
+      getUser: (id: string) => orm.users.getById(id),
+      listUsers: () => orm.users.getAll(),
+    };
+  }),
+};
+```
+
+## Response headers
+
+The `respondWith` helper allows you to customize the response headers.
+
+Here is an example of rudimentary login/logout endpoints:
+
+```ts
+import cookie from 'cookie';
+import { respondWith } from 'integro';
+
+export const app = {
+  auth: {
+    login: (username: string, password: string) => {
+      if (username && password) {
+        const headers = new Headers();
+
+        if (!isValid(username, password)) throw new Error('No match!');
+
+        headers.set('Set-Cookie', cookie.serialize('session', username));
+
+        return respondWith(undefined, { headers });
+      } else {
+        throw new Error('Not authenticated');
+      }
+    },
+    logout: () => {
+      const headers = new Headers();
+
+      headers.set('Set-Cookie', cookie.serialize('session', '', { expires: new Date(0) }));
+
+      return respondWith(undefined, { headers });
+    },
+  },
+};
+```
+
+## Cross-Origin Resource Sharing (CORS)
+
+Both `createClient` and `createServer` accept optional properties.
+
+```ts
+// Server
+
+const server = createServer(app, {
+  headers: {
+    'Access-Control-Allow-Credentials': 'true',
+    'access-control-allow-origin': 'http://localhost:5173',
+    'access-control-max-age': '2592000'
+  }
+});
+```
+
+```ts
+// Client
+
+import { createClient } from 'integro/browser';
+import type { App } from "@repo/my-server";
+
+export const api = createClient<App>("http://localhost:8000", {
+  fetchOptions: { credentials: 'include' }
 });
 ```
 

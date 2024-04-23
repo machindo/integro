@@ -1,18 +1,14 @@
 import React, { useState } from "react";
 import useSWR from "swr";
 import "./App.css";
-import { client, createFetcherPair, useCaller } from "./client";
+import { api } from "./client";
 
 export const Artists: React.FC = () => {
   const [instrument, setInstrument] = useState("");
-  const { data, isValidating } = useSWR(
-    ...createFetcherPair(client.artists.getArtists, {})
-  );
-  const { data: version } = useCaller(client.getVersion);
+  const { data, isValidating } = useSWR('artists/getArtists', () => api.artists.list());
 
   return (
     <div>
-      <p>Version: {version?.version}</p>
       <label>
         Instrument{" "}
         <input
