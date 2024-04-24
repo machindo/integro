@@ -1,22 +1,15 @@
-import cookie from 'cookie';
-import { createServer } from 'integro';
+import { integro } from 'integro';
+import { createServer } from 'node:http';
 import { app } from './app';
 
-const server = createServer(app, {
-  headers: {
-    'Access-Control-Allow-Credentials': 'true',
-    'access-control-allow-origin': 'http://localhost:5173',
-    'access-control-max-age': '2592000'
-  },
-  middleware: [
-    req => {
-      console.log('cookies', cookie.parse(req.headers.get('cookie') ?? ''));
+const handle = integro(app);
 
-      return req;
-    }
-  ]
-});
+createServer((req, res) => {
+  if (new URL(req.url ?? '', 'https://localhost').pathname === '/api') {
+    return handle(req, res);
+  }
 
-server.listen(8000, undefined, () =>
+  res.end();
+}).listen(8000, undefined, () =>
   console.info(`Integro listening on port 8000 ...`)
 );

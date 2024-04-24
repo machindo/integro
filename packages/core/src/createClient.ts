@@ -1,40 +1,40 @@
-import { pack, unpack } from 'msgpackr';
-import { Middleware } from './types/Middleware.js';
-import { Handler, IntegroApp } from './types/IntegroApp.js';
-import { IntegroClient } from './types/IntegroClient.js';
-import { pipe } from './utils/pipe.js';
-import { createProxy } from './utils/createProxy.js';
+import { MsgPackDecoderFast } from '@jsonjoy.com/json-pack/lib/msgpack/MsgPackDecoderFast';
+import { MsgPackEncoderFast } from '@jsonjoy.com/json-pack/lib/msgpack/MsgPackEncoderFast';
+import { IntegroApp } from './types/IntegroApp';
+import { IntegroClient } from './types/IntegroClient';
+import { createProxy } from './utils/createProxy';
 
 export type ClientConfig = {
-  fetchOptions?: RequestInit;
-  middleware?: Middleware[];
+  requestInit?: RequestInit | (() => RequestInit);
 };
+
+const encoder = new MsgPackEncoderFast();
+const decoder = new MsgPackDecoderFast();
 
 const post = async ({
   url,
-  fetchOptions = {},
-  middleware,
+  requestInit = {},
   data,
 }: {
   url: string;
-  fetchOptions?: RequestInit;
-  middleware: Middleware[];
+  requestInit?: ClientConfig['requestInit'];
   data: {
     path: string[];
     args: any[];
   };
-}) => {
-  const req = pipe(
-    new Request(url, {
-      method: "POST",
-      body: pack(data),
-    }),
-    ...middleware
-  );
-  const res = await fetch(req, fetchOptions);
-  const blob = await res.blob();
-  const arrayBuffer = await blob.arrayBuffer();
-  const unpacked = unpack(new Uint8Array(arrayBuffer));
+  }) => {
+  const init = typeof requestInit === 'function' ? requestInit() : requestInit;
+  const res = await fetch(url, {
+    method: "POST",
+    ...init,
+    headers: {
+      'Content-Type': 'application/msgpack',
+      ...init.headers
+    },
+    body: encoder.encode(data),
+  });
+  const arrayBuffer = await res.arrayBuffer();
+  const unpacked = decoder.read(new Uint8Array(arrayBuffer));
 
   if (!res.ok) {
     throw new Error('The server responded in error.', {
@@ -45,11 +45,10 @@ const post = async ({
   return unpacked;
 };
 
-export const createClient = <T extends IntegroApp>(url = '/', { fetchOptions, middleware = [] }: ClientConfig = {}) =>
+export const createClient = <T extends IntegroApp>(url = '/', { requestInit }: ClientConfig = {}) =>
   createProxy<IntegroClient<T>>((path, args) => post({
     url,
-    fetchOptions,
-    middleware,
+    requestInit,
     data: {
       path,
       args

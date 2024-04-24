@@ -1,11 +1,12 @@
 import cookie from 'cookie';
 import { defineApp, respondWith, unwrap } from 'integro';
 import z from 'zod';
-import { getArtist } from './api/artists/getArtist.js';
-import getArtists from './api/artists/getArtists.js';
-import { upsertArtist } from './api/artists/upsertArtist.js';
+import { getArtist } from './api/artists/getArtist';
+import getArtists from './api/artists/getArtists';
+import { upsertArtist } from './api/artists/upsertArtist';
 
 export const app = defineApp({
+  version: () => '0.2.8',
   artists: {
     create: unwrap(() => import('./api/artists/createArtist').then(module => module.createArtist)),
     get: getArtist,

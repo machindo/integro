@@ -1,11 +1,9 @@
 import { createApiClient } from '@integro/demo-server';
 
-export const api = createApiClient('http://localhost:8000', {
-  middleware: [req => {
-    req.headers.set('Authorization', 'admin')
-
-    return req;
-  }]
+export const api = createApiClient('http://localhost:8000/api', {
+  requestInit: {
+    headers: { 'Authorization': 'admin' }
+  }
 });
 
 const loginRes = await api.auth.login('1', '2');

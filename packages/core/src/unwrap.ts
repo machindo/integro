@@ -1,4 +1,4 @@
-import { IntegroApp } from './types/IntegroApp.js';
+import { IntegroApp } from './types/IntegroApp';
 
 const canUnwrappable = Symbol('canUnwrappable');
 

@@ -37,14 +37,11 @@ Start up the server with one line:
 ```ts
 // server.ts
 
-import { createServer } from 'integro';
+import { integro } from 'integro';
+import { createServer } from 'node:http';
 import { app } from './app';
 
-const server = createServer(app);
-
-server.listen(8000, undefined, () =>
-  console.info(`Integro listening on port 8000 ...`)
-);
+createServer(integro(app)).listen(8000);
 ```
 
 ### Client side
@@ -180,44 +177,23 @@ The client object is typed as if using regular object nesting:
 
 ![Type safety with lazy loading example](./docs/assets/lazy-type-safety.png)
 
-## Middleware
+## Authentication and authorization
 
-Integro supports middleware functions for providing basic authentication or other requirements. A middleware function takes a [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request) as its only parameter and returns a Request.
-
-```ts
-// Server
-
-import { createServer } from 'integro';
-import { app } from './app';
-
-const checkAuthentication = (req: Request) => {
-  const token = req.headers.get('Authorization');
-
-  if (!isValid(token)) throw new Error('User not authenticated');
-
-  return req;
-}
-
-const server = createServer(app, { middleware: [checkAuthentication] });
-
-server.listen(8000, undefined, () =>
-  console.info(`Integro listening on port 8000 ...`)
-);
-```
+`createClient` accepts a `requestInit` option for overriding most Response properties, including headers.
 
 ```ts
 // Client
 
-const authenticate = (req: Request) => {
-  const newReq = req.clone();
+import { createClient } from 'integro/browser';
+import type { App } from '@repo/api';
+import { getCurrentAuthToken } from './auth';
 
-  newReq.headers.set('Authorization', `bearer ${token}`);
-
-  return newReq;
-}
-
-createClient('http://localhost:8000', {
-  middleware: [authenticate]
+export const api = createClient<App>('http://localhost:8000', {
+  requestInit: () => ({
+    headers: {
+      'Authorization': getCurrentAuthToken()
+    }
+  })
 });
 ```
 
@@ -282,18 +258,18 @@ export const app = {
 
 ## Cross-Origin Resource Sharing (CORS)
 
-Both `createClient` and `createServer` accept optional properties.
+Both `createClient` and `integro` functions accept header properties to allow for CORS.
 
 ```ts
 // Server
 
-const server = createServer(app, {
+createServer(integro(app, {
   headers: {
-    'Access-Control-Allow-Credentials': 'true',
+    'access-control-allow-credentials': 'true',
     'access-control-allow-origin': 'http://localhost:5173',
     'access-control-max-age': '2592000'
   }
-});
+})).listen(8000);
 ```
 
 ```ts
@@ -303,7 +279,11 @@ import { createClient } from 'integro/browser';
 import type { App } from "@repo/my-server";
 
 export const api = createClient<App>("http://localhost:8000", {
-  fetchOptions: { credentials: 'include' }
+  requestInit: {
+    headers: {
+      credentials: 'include'
+    }
+  }
 });
 ```
 
@@ -353,6 +333,121 @@ export const app = {
     (text, times) => Array(times).fill(text).join(', ')
   ),
 };
+```
+
+## Framework agnostic
+
+Integro's `integro()` works with servers that accept handlers in the form `(request: IncomingMessage, response: ServerResponse) => void` (such as node:http, express) as well as the Fetch API style `(request: Request) => Response` (such as bun).
+
+### Node's built-in `http` package
+
+Any route:
+
+```ts
+import { integro } from 'integro';
+import { createServer } from 'node:http';
+import { app } from './app';
+
+// Any route
+createServer(integro(app)).listen(8000);
+```
+
+Specific route:
+```ts
+import { integro } from 'integro';
+import { createServer } from 'node:http';
+import { app } from './app';
+
+// Specific route
+createServer((req, res) => {
+  if (new URL(req.url ?? '', 'https://localhost').pathname === '/api') {
+    return handle(req, res);
+  }
+
+  res.end();
+}).listen(8000);
+```
+
+### Bun's built-in `serve` function
+
+Any route:
+
+```ts
+import { serve } from 'bun';
+import { integro } from 'integro';
+import { app } from './app.js';
+
+serve({
+  port: 8000,
+  fetch: integro(app)
+});
+```
+
+Specific route:
+
+```ts
+import { serve } from 'bun';
+import { integro } from 'integro';
+import { app } from './app.js';
+
+serve({
+  port: 8000,
+  fetch: (req) => {
+    if (new URL(req.url).pathname === '/api') {
+      return integro(app)(req);
+    }
+
+    return Response.error();
+  }
+});
+```
+
+### Express
+
+Any route:
+
+```ts
+import { app } from './app';
+import { integro } from 'integro';
+import express from 'express';
+
+express()
+  .use(integro(app))
+  .listen(8000);
+```
+
+Specific route:
+
+```ts
+import { app } from './app';
+import { integro } from 'integro';
+import express from 'express';
+
+const handler = integro(app);
+
+express()
+  .options('/api', (req, res, next) => {
+    handler(req, res);
+    next();
+  })
+  .post('/api', (req, res, next) => {
+    handler(req, res);
+    next();
+  })
+  .listen(8000);
+```
+
+### Next.js
+
+With app router:
+
+```ts
+// src/api/route.ts
+
+import { integro } from 'integro';
+import { app } from './app';
+
+export const POST = integro(app);
 ```
 
 ## License
