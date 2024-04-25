@@ -18,13 +18,17 @@
     "build:browser": "bun build src/browser.ts --outdir=dist --target browser",
     "build:server": "bun build src/index.ts --outdir=dist --target node",
     "build:types": "tsc",
-    "prepublishOnly": "rm -rf dist && rm tsconfig.tsbuildinfo; bun run build"
+    "prepublishOnly": "rm -rf dist && rm tsconfig.tsbuildinfo; bun run build",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:types": "tstyche"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "latest",
     "del-cli": "^5.1.0",
     "get-port": "^7.1.0",
+    "tstyche": "^1.1.0",
     "type-fest": "^4.15.0",
     "typescript": "^5.0.0",
     "undici-types": "^6.14.1"
