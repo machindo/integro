@@ -5,9 +5,9 @@ import { app } from './app.js';
 serve({
   port: 8000,
   fetch: (req) => {
-    if (new URL(req.url).pathname !== '/api') return Response.error();
+    if (new URL(req.url).pathname === '/api') return integro(app)(req);
 
-    return integro(app)(req);
+    return Response.error();
   }
 });
 

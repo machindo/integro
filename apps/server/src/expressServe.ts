@@ -12,7 +12,8 @@ express()
     next();
   })
   .use((_req, res, next) => {
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('access-control-allow-credentials', 'true');
+    res.setHeader('access-control-allow-headers', 'Content-Type');
     res.setHeader('access-control-allow-origin', 'http://localhost:5173');
     res.setHeader('access-control-max-age', '2592000');
 

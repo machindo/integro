@@ -1,6 +1,6 @@
 {
   "name": "integro",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "main": "dist/index.js",
   "browser": "dist/browser.js",
   "module": "dist/index.js",
@@ -32,8 +32,6 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@jsonjoy.com/json-pack": "^1.0.2",
-    "json-joy": "^15.4.0",
-    "msgpackr": "^1.10.1"
+    "@jsonjoy.com/json-pack": "^1.0.2"
   }
 }

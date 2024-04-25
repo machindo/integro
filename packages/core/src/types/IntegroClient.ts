@@ -14,5 +14,10 @@ export type IntegroClient<T extends IntegroApp> =
   T extends Unwrappable<infer U>
     ? IntegroClient<U>
     : T extends Handler
-    ? AsyncData<T>
+    ? (AsyncData<T> & { [Symbol.toStringTag]: string })
     : { [K in keyof T]: T[K] extends IntegroApp ? IntegroClient<T[K]> : never }
+
+export type AnyClientMethod = {
+  (...args: any[]): Promise<any>;
+  [Symbol.toStringTag]: string;
+}

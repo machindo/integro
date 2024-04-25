@@ -1,11 +1,13 @@
-import useSWR from 'swr';
-import { api } from '../api';
-import { Artist } from '@integro/demo-server/src/types/Artist';
 import { useEffect } from 'react';
+import { api, useIntegro, useIntegroQuery } from '../api';
 
 export const Artists = () => {
-  const { data } = useSWR('api.artists.list', () => api.artists.list());
-  const { data: version } = useSWR('api.version', () => api.version());
+  const { data } = useIntegro(api.artists.list);
+  const { data: version } = useIntegroQuery(api.version);
+
+  useEffect(() => {
+    console.log('data:', data)
+  }, [data]);
   
   useEffect(() => {
     console.log('version:', version)
@@ -13,7 +15,7 @@ export const Artists = () => {
 
   return (
     <div>
-      {data?.map((artist: Artist) => (
+      {data?.map((artist) => (
         <p key={artist.name}>
           {artist.name}: {artist.instruments?.join(",")}
         </p>

@@ -5,6 +5,6 @@ export const createProxy = <
   U extends (path: string[], args: any[]) => any = (path: string[], args: any[]) => any
 >(apply: U, path: string[] = []): T =>
   new Proxy(() => {}, {
-    get: (_target, key) => createProxy(apply, [...path, key.toString()]),
+    get: (_target, key) => key === Symbol.toStringTag ? path.join('.') : createProxy(apply, [...path, key.toString()]),
     apply: (_target, _thisArg, args) => apply(path, args)
   }) as T;
