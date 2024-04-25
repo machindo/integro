@@ -1,5 +1,4 @@
-import { MsgPackDecoderFast } from '@jsonjoy.com/json-pack/lib/msgpack/MsgPackDecoderFast';
-import { MsgPackEncoderFast } from '@jsonjoy.com/json-pack/lib/msgpack/MsgPackEncoderFast';
+import { pack, unpack } from 'msgpackr';
 import { IntegroApp } from './types/IntegroApp';
 import { IntegroClient } from './types/IntegroClient';
 import { createProxy } from './utils/createProxy';
@@ -7,9 +6,6 @@ import { createProxy } from './utils/createProxy';
 export type ClientConfig = {
   requestInit?: RequestInit | (() => RequestInit);
 };
-
-const encoder = new MsgPackEncoderFast();
-const decoder = new MsgPackDecoderFast();
 
 const post = async ({
   url,
@@ -31,12 +27,23 @@ const post = async ({
       'Content-Type': 'application/msgpack',
       ...init.headers
     },
-    body: encoder.encode(data),
+    body: pack(data),
   });
   const arrayBuffer = await res.arrayBuffer();
-  const unpacked = decoder.read(new Uint8Array(arrayBuffer));
+  const unpacked = unpack(new Uint8Array(arrayBuffer));
 
   if (!res.ok) {
+    if (
+      typeof unpacked === 'object' && 
+      unpacked !== null && 
+      Object.getPrototypeOf(unpacked) === Object.prototype && 
+      'message' in unpacked && 
+      typeof unpacked.message === 'string' &&
+      unpacked.message.length
+    ) {
+      throw new Error((unpacked as { message: string }).message);
+    }
+
     throw new Error('The server responded in error.', {
       cause: unpacked,
     });

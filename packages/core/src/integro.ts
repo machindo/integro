@@ -1,15 +1,12 @@
-import { MsgPackEncoderFast } from '@jsonjoy.com/json-pack/lib/msgpack/MsgPackEncoderFast';
-import { MsgPackDecoderFast } from '@jsonjoy.com/json-pack/lib/msgpack/MsgPackDecoderFast';
+import { pack, unpack } from 'msgpackr';
 import { IncomingMessage, ServerResponse } from "node:http";
 import { TLSSocket } from 'node:tls';
 import { isUnwrappable } from './index.js';
 import { isResponseInitObject } from './respondWith.js';
 import { IntegroApp } from './types/IntegroApp.js';
 
+class BodyParsingError extends Error { };
 class PathError extends Error { };
-
-const encoder = new MsgPackEncoderFast();
-const decoder = new MsgPackDecoderFast();
 
 const accessHeaders = {
   "Access-Control-Allow-Methods": "OPTIONS, POST"
@@ -20,21 +17,22 @@ const parseIncomingMessageUrl = (req: IncomingMessage) => {
 
   const baseUrl = `${protocol}://${req.headers.host}`;
 
-  if (!req.url) {
-    return new URL(baseUrl);
-  }
-
-  const parsedUrl = new URL(req.url, `${protocol}://${req.headers.host}`);
-  return parsedUrl;
+  return req.url ? new URL(req.url, baseUrl) : new URL(baseUrl);
 }
+
+const everyItemIsString = (array: unknown[]): array is string[] => array.every(value => typeof value === 'string');
 
 const getData = async (req: Request) => {
   const arrayBuffer = await req.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  const data = decoder.read(buffer) as { path: string[], args: unknown[] };
+  const data = unpack(buffer) as { path: string[], args: unknown[] };
 
-  if (!Array.isArray(data.path) || typeof data.path[0] !== 'string' || !Array.isArray(data.args)) {
-    throw new Error('Data is malformed');
+  if (!Array.isArray(data.path) || !everyItemIsString(data.path)) {
+    throw new BodyParsingError('Could not parse body. Path must be an array of strings.');
+  }
+
+  if (!Array.isArray(data.args)) {
+    throw new BodyParsingError('Could not parse body. Args must be an array.');
   }
 
   return data;
@@ -44,13 +42,13 @@ const resolveProp = async (
   { path: [firstProp, ...path], app, request }:
     { path: string[], app: IntegroApp, request: Request }
 ): Promise<IntegroApp> => {
-  const property = app && (typeof app === 'object' ? app[firstProp] : undefined);
+  const unwrappedApp = isUnwrappable(app) ? await app(request) : app;
 
-  if (!property) throw new PathError();
+  if (!unwrappedApp) throw new PathError(`Path could not be found in the app.`);
 
-  const unwrappedProperty = isUnwrappable(property) ? await property(request) : property;
+  const property = firstProp == null ? undefined : (unwrappedApp as Record<string, IntegroApp>)[firstProp];
 
-  return path.length ? resolveProp({ path, app: unwrappedProperty, request }) : unwrappedProperty;
+  return property ? resolveProp({ path, app: property, request }) : unwrappedApp;
 }
 
 const getHttpMessageBody = (
@@ -70,38 +68,38 @@ const toRequest = async (incomingMessage: IncomingMessage) =>
     body: await getHttpMessageBody(incomingMessage),
   });
 
+const encodeResponse = (data: unknown, responseInit?: ResponseInit) =>
+  new Response(pack(data), responseInit)
+
 const handleRequest = async (app: IntegroApp, request: Request): Promise<Response> => {
   try {
-    const data = await getData(request);
-    const { args, path } = data;
+    const { args, path } = await getData(request);
 
-    try {
-      const handler = await resolveProp({ path, app, request });
+    const handler = await resolveProp({ path, app, request });
 
-      if (typeof handler !== "function") {
-        throw new PathError('handler is not a function');
-      }
-
-      const res = await handler(...args);
-
-      if (isResponseInitObject(res)) {
-        return new Response(encoder.encode(res.data), res.responseInit)
-      }
-
-      return new Response(encoder.encode(res));
-    } catch (e) {
-      if (e instanceof PathError) {
-        return new Response(encoder.encode(`Path "${path.join('.')}" could not be found in the app.`), { status: 404 });
-      }
-
-      if (e instanceof Error) {
-        return new Response(encoder.encode(e.message), { status: 404 });
-      }
-
-      return new Response(encoder.encode('Something went wrong.'), { status: 400 });
+    if (typeof handler !== "function") {
+      throw new PathError(`Path "${path.join('.')}" could not be found in the app.`);
     }
+
+    const res = await handler(...args);
+
+    return isResponseInitObject(res)
+      ? encodeResponse(res.data, res.responseInit)
+      : encodeResponse(res);
   } catch (e) {
-    return new Response(encoder.encode('Could not parse body.'), { status: 400 });
+    if (e instanceof BodyParsingError) {
+      return encodeResponse({ message: e.message }, { status: 400 });
+    }
+
+    if (e instanceof PathError) {
+      return encodeResponse({ message: e.message }, { status: 404 });
+    }
+
+    if (e instanceof Error) {
+      return encodeResponse({ message: e.message }, { status: 400 });
+    }
+
+    return encodeResponse({ message: 'Something went wrong.' }, { status: 400 });
   }
 };
 
@@ -112,34 +110,23 @@ export const integro = (app: IntegroApp): RequestHandler =>
     const usesServerResponse = response instanceof ServerResponse;
     const req = request instanceof Request ? request : await toRequest(request);
 
-    try {
-      if (req.method === "OPTIONS") {
-        if (usesServerResponse) {
-          response.writeHead(204, accessHeaders);
-          response.end();
-        }
-
-        return new Response(undefined, { headers: accessHeaders, status: 204 })
-      }
-
-      const res = await handleRequest(app, req);
-
+    if (req.method === "OPTIONS") {
       if (usesServerResponse) {
-        response.statusCode = res.status;
-        response.statusMessage = res.statusText;
-        res.headers.forEach((value, key) => response.setHeader(key, value));
-        response.end(Buffer.from(await (await res.blob()).arrayBuffer()));
+        response.writeHead(204, accessHeaders);
+        response.end();
       }
 
-      return res;
-    } catch (e) {
-      if (usesServerResponse) {
-        response.statusCode = 403;
-        response.end(
-          encoder.encode(e instanceof Error ? e.message : "An error occured")
-        );
-      }
-
-      return new Response(encoder.encode(e instanceof Error ? e.message : "An error occured"), { status: 403 })
+      return new Response(undefined, { headers: accessHeaders, status: 204 })
     }
+
+    const res = await handleRequest(app, req);
+
+    if (usesServerResponse) {
+      response.statusCode = res.status;
+      response.statusMessage = res.statusText;
+      res.headers.forEach((value, key) => response.setHeader(key, value));
+      response.end(Buffer.from(await (await res.blob()).arrayBuffer()));
+    }
+
+    return res;
   }

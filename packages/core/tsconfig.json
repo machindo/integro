@@ -18,5 +18,5 @@
     "allowJs": true,
     "emitDeclarationOnly": true
   },
-  "include": ["src"]
+  "include": ["src", "src/tests/nestedApp.spec.ts"]
 }
