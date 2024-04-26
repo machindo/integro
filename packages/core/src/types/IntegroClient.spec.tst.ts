@@ -32,10 +32,10 @@ test('nested api', () => {
   const api = {
     genres: {
       blues: {
-        getByName: (name: string) => ({ } as BluesMan)
+        getByName: (_name: string) => ({ } as BluesMan)
       },
       jazz: {
-        getByName: (name: string) => ({ } as JazzMan)
+        getByName: (_name: string) => ({ } as JazzMan)
       }
     }
   };

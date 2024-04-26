@@ -18,12 +18,14 @@
     "build:browser": "bun build src/browser.ts --outdir=dist --target browser",
     "build:server": "bun build src/index.ts --outdir=dist --target node",
     "build:types": "tsc",
+    "lint": "eslint .",
     "prepublishOnly": "rm -rf dist && rm tsconfig.tsbuildinfo; bun run build",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:types": "tstyche"
   },
   "devDependencies": {
+    "@integro/eslint-config": "workspace:*",
     "@types/bun": "latest",
     "@types/node": "latest",
     "del-cli": "^5.1.0",

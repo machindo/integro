@@ -15,14 +15,14 @@ npm install integro
 
 ## Getting started
 
-### Server side
+### Server-side
 
 First, create your server-side app using plain object style. No need to worry about routes.
 
 ```ts
 // app.ts
 
-export app = {
+export const app = {
   greetings: {
     sayHi: (name: string) => `Hi, ${name}!`,
     sayBye: (name: string) => `Bye, ${name}!`
@@ -44,7 +44,7 @@ import { app } from './app';
 createServer(integro(app)).listen(8000);
 ```
 
-### Client side
+### Client-side
 
 Create the client-side api proxy object. When using in a browser, `createClient` must be imported from 'integro/browser'. If your client is in node or bun, then `createClient` may be imported from either 'integro' or 'integro/browser'.
 
@@ -258,18 +258,23 @@ export const app = {
 
 ## Cross-Origin Resource Sharing (CORS)
 
-Both `createClient` and `integro` functions accept header properties to allow for CORS.
+`createClient` accepts header properties to allow for CORS, while the server can be configured according to your chosen framework.
 
 ```ts
 // Server
 
-createServer(integro(app, {
-  headers: {
-    'access-control-allow-credentials': 'true',
-    'access-control-allow-origin': 'http://localhost:5173',
-    'access-control-max-age': '2592000'
+createServer((req, res) => {
+  res.setHeader('access-control-allow-credentials', 'true');
+  res.setHeader('access-control-allow-headers', 'Content-Type');
+  res.setHeader('access-control-allow-origin', 'http://localhost:5173');
+  res.setHeader('access-control-max-age', '2592000');
+
+  if (new URL(req.url ?? '', 'https://localhost').pathname === '/api') {
+    return integro(app)(req, res);
   }
-})).listen(8000);
+
+  res.end();
+}).listen(8000);
 ```
 
 ```ts
@@ -287,11 +292,11 @@ export const api = createClient<App>("http://localhost:8000", {
 });
 ```
 
-## Server side validation
+## Server-side validation
 
 Type safety can help you avoid most problems at development and build time, but what about protecting the server against unforeseeable bugs or bad actors?
 
-Server side validation is currently not included out of the box, but there are many great options already available to add validation with little effort.
+Server-side validation is currently not included out of the box, but there are many great options already available to add validation with little effort.
 
 ### With Prisma
 
@@ -329,7 +334,7 @@ import z from 'zod';
 
 export const app = {
   repeatString: z.function().args(z.string(), z.number()).implement(
-    // text and times types are infered via zod
+    // text and times types are inferred via zod
     (text, times) => Array(times).fill(text).join(', ')
   ),
 };
@@ -450,7 +455,7 @@ import { app } from './app';
 export const POST = integro(app);
 ```
 
-## Client side recipies
+## Client-side recipies
 
 You can retrieve the path name of an integro client method by using the well-known symbol `Symbol.toStringTag`. This is useful for cases where you need to dynamically get the path at runtime.
 

@@ -15,5 +15,3 @@ export const useIntegroQuery = <Fn extends AnyClientMethod>(fn: Fn, ...args: Par
     queryKey: [fn[Symbol.toStringTag], ...args],
     queryFn: () => fn(...args)
   });
-
-console.log('Symbol.toStringTag:', Symbol.toStringTag)

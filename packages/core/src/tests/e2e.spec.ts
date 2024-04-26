@@ -6,9 +6,9 @@ import { pack, unpack } from 'msgpackr';
 import { ClientConfig, IntegroApp, createClient, integro, respondWith, unwrap } from '../index';
 
 const artists = [
-  { id: 'clvfae6bu0000cgvc4ufm336g', name: 'miles' },
-  { id: 'clvfaey730002cgvc5th8e890', name: 'monk' },
-  { id: 'clvfaf07y0004cgvcbw5f7fda', name: 'mingus' },
+  { id: 'clvfae6bu0000cgvc4ufm336g', name: 'miles', dob: new Date('1926-05-26') },
+  { id: 'clvfaey730002cgvc5th8e890', name: 'monk', dob: new Date('1917-10-10') },
+  { id: 'clvfaf07y0004cgvcbw5f7fda', name: 'mingus', dob: new Date('1922-04-22') },
 ]
 
 const serverAPI = {
@@ -20,7 +20,7 @@ const serverAPI = {
   },
   auth: {
     login: {
-      withUsernameAndPassword: (username: string, password: string) =>
+      withUsernameAndPassword: (username: string, _password: string) =>
         respondWith(null, {
           headers: {
             'Set-Cookie': `username=${username}`
@@ -78,13 +78,17 @@ test('resolves empty string function', async () => {
 test('resolves nested function', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.artists.findById('clvfaf07y0004cgvcbw5f7fda')).resolves.toEqual({ id: 'clvfaf07y0004cgvcbw5f7fda', name: 'mingus' });
+  return expect(client.artists.findById('clvfaf07y0004cgvcbw5f7fda')).resolves.toEqual({
+    id: 'clvfaf07y0004cgvcbw5f7fda', name: 'mingus', dob: new Date('1922-04-22')
+  });
 });
 
 test('resolves nested async function', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.artists.findByName('miles')).resolves.toEqual({ id: 'clvfae6bu0000cgvc4ufm336g', name: 'miles' });
+  return expect(client.artists.findByName('miles')).resolves.toEqual({
+    id: 'clvfae6bu0000cgvc4ufm336g', name: 'miles', dob: new Date('1926-05-26')
+  });
 });
 
 test('unwraps dynamically imported module app', async () => {
@@ -106,7 +110,7 @@ test('unwraps twice dynamically imported module function', async () => {
 });
 
 test('unwrap provides request object', async () => {
-  const { client, server } = await start(serverAPI, {
+  const { client } = await start(serverAPI, {
     requestInit: {
       headers: { 'Authorization': "Do you know who I am?!" }
     }
@@ -282,14 +286,14 @@ test('errors when request args is missing', async () => {
 test('errors when requested path is not a function', async () => {
   const { client } = await start(serverAPI);
 
-  // @ts-expect-error
+  // @ts-expect-error: client.artists should not be a function
   return expect(client.artists()).rejects.toThrowError('Path "artists" could not be found in the app.');
 });
 
 test('errors when requested path is not found', async () => {
   const { client } = await start(serverAPI);
 
-  // @ts-expect-error
+  // @ts-expect-error: client.artists.findByInstrument should be undefined
   return expect(client.artists.findByInstrument()).rejects.toThrowError('Path "artists.findByInstrument" could not be found in the app.');
 });
 

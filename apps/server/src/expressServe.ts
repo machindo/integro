@@ -1,7 +1,7 @@
 import cookie from 'cookie';
-import { app } from './app';
-import { integro } from 'integro';
 import express from 'express';
+import { integro } from 'integro';
+import { app } from './app';
 
 const handler = integro(app);
 
@@ -20,6 +20,7 @@ express()
     next();
   })
   .use(handler)
+  .post('/api', handler)
   .listen(8000, () =>
     console.info(`Integro listening on port 8000 ...`)
   );

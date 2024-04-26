@@ -1,9 +1,10 @@
 // This configuration only applies to the package manager root.
 /** @type {import("eslint").Linter.Config} */
 module.exports = {
-  ignorePatterns: ["apps/**", "packages/**"],
-  extends: ["@integro/eslint-config/library.js"],
-  parser: "@typescript-eslint/parser",
+  root: true,
+  ignorePatterns: ['.eslintrc.cjs'],
+  extends: ['@integro/eslint-config/library.js'],
+  parser: '@typescript-eslint/parser',
   parserOptions: {
     project: true,
   },

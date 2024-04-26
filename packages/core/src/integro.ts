@@ -13,8 +13,7 @@ const accessHeaders = {
 } as const;
 
 const parseIncomingMessageUrl = (req: IncomingMessage) => {
-  let protocol = (req.socket as TLSSocket).encrypted ? 'https' : 'http';
-
+  const protocol = (req.socket as TLSSocket).encrypted ? 'https' : 'http';
   const baseUrl = `${protocol}://${req.headers.host}`;
 
   return req.url ? new URL(req.url, baseUrl) : new URL(baseUrl);

@@ -3,7 +3,7 @@ import { IntegroApp, Handler } from './IntegroApp';
 import { Unwrappable } from '../unwrap';
 import { WithResponseInit } from '../respondWith';
 
-type AsyncData<Fn extends (...arguments_: any[]) => any> =
+type AsyncData<Fn extends Handler> =
   ReturnType<Fn> extends WithResponseInit<infer U>
     ? AsyncData<SetReturnType<Fn, U>>
     : ReturnType<Fn> extends Promise<unknown>
@@ -18,6 +18,7 @@ export type IntegroClient<T extends IntegroApp> =
     : { [K in keyof T]: T[K] extends IntegroApp ? IntegroClient<T[K]> : never }
 
 export type AnyClientMethod = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- this is the convention for a generic function type
   (...args: any[]): Promise<any>;
   [Symbol.toStringTag]: string;
 }

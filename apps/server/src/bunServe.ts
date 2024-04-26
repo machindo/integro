@@ -4,10 +4,15 @@ import { app } from './app.js';
 
 serve({
   port: 8000,
-  fetch: (req) => {
-    if (new URL(req.url).pathname === '/api') return integro(app)(req);
+  fetch: async (req) => {
+    const res = await integro(app)(req);
 
-    return Response.error();
+    res.headers.set('access-control-allow-credentials', 'true');
+    res.headers.set('access-control-allow-headers', 'Content-Type');
+    res.headers.set('access-control-allow-origin', 'http://localhost:5173');
+    res.headers.set('access-control-max-age', '2592000');
+
+    return res;
   }
 });
 

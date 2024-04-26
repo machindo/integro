@@ -16,7 +16,7 @@ const post = async ({
   requestInit?: ClientConfig['requestInit'];
   data: {
     path: string[];
-    args: any[];
+    args: unknown[];
   };
   }) => {
   const init = typeof requestInit === 'function' ? requestInit() : requestInit;

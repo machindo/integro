@@ -7,6 +7,7 @@ import { upsertArtist } from './api/artists/upsertArtist';
 
 export const app = defineApp({
   version: () => '0.2.8',
+  serverDate: () => new Date(),
   artists: {
     create: unwrap(() => import('./api/artists/createArtist').then(module => module.createArtist)),
     get: getArtist,
