@@ -3,7 +3,8 @@ import getPort from 'get-port';
 import { createServer as createHttpServer } from 'http';
 import { createServer as createHttpsServer } from 'https';
 import { pack, unpack } from 'msgpackr';
-import { ClientConfig, IntegroApp, createClient, integro, respondWith, unwrap } from '../index';
+import { ClientConfig, createClient } from '../client';
+import { IntegroApp, createController, respondWith, unwrap } from '../index';
 
 const artists = [
   { id: 'clvfae6bu0000cgvc4ufm336g', name: 'miles', dob: new Date('1926-05-26') },
@@ -38,7 +39,7 @@ const serverAPI = {
 }
 
 const serve = async (app: IntegroApp) => Bun.serve({
-  fetch: integro(app),
+  fetch: createController(app),
   port: await getPort()
 });
 
@@ -152,7 +153,7 @@ test('respondWith sets headers', async () => {
 
 test('respondWith headers work with node http server', async () => {
   const port = await getPort();
-  const server = createHttpServer(integro(serverAPI)).listen(port);
+  const server = createHttpServer(createController(serverAPI)).listen(port);
   const res = await fetch(`http://localhost:${port}`, {
     method: 'POST',
     body: pack({
@@ -181,7 +182,7 @@ test('respondWith sets status code', async () => {
 
 test('respondWith status code works with node http server', async () => {
   const port = await getPort();
-  const server = createHttpServer(integro(serverAPI)).listen(port);
+  const server = createHttpServer(createController(serverAPI)).listen(port);
   const res = await fetch(`http://localhost:${port}`, {
     method: 'POST',
     body: pack({
@@ -210,7 +211,7 @@ test('rejects without custom error message', async () => {
 test('works with node http server', async () => {
   const port = await getPort();
   const client = createClient<typeof serverAPI>(`http://localhost:${port}`);
-  const server = createHttpServer(integro(serverAPI)).listen(port);
+  const server = createHttpServer(createController(serverAPI)).listen(port);
 
   expect(client.version()).resolves.toBe('0.1.0');
 
@@ -220,7 +221,7 @@ test('works with node http server', async () => {
 test('works with node https server', async () => {
   const port = await getPort();
   const client = createClient<typeof serverAPI>(`http://localhost:${port}`);
-  const server = createHttpsServer(integro(serverAPI)).listen(port);
+  const server = createHttpsServer(createController(serverAPI)).listen(port);
 
   expect(client.version()).resolves.toBe('0.1.0');
 
@@ -306,7 +307,7 @@ test('responds to OPTIONS with allowed methods', async () => {
 
 test('responds to OPTIONS with allowed methods with node http server', async () => {
   const port = await getPort();
-  const server = createHttpServer(integro({})).listen(port);
+  const server = createHttpServer(createController({})).listen(port);
   const res = await fetch(`http://localhost:${port}`, { method: 'OPTIONS' });
 
   expect(res.headers.get('Access-Control-Allow-Methods')).toBe('OPTIONS, POST');

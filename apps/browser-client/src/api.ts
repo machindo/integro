@@ -1,6 +1,6 @@
 import { createApiClient } from "@integro/demo-server";
 import { useQuery } from '@tanstack/react-query';
-import { AnyClientMethod } from 'integro/browser';
+import { AnyClientMethod } from 'integro/client';
 import useSWR from 'swr';
 
 export const api = createApiClient("http://localhost:8000/api", {

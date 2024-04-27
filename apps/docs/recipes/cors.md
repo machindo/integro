@@ -5,7 +5,7 @@ CORS can be configured according to your chosen server framework.
 ::: code-group
 
 ```ts [node:http]
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { createServer } from 'node:http';
 import { app } from './app';
 
@@ -16,7 +16,7 @@ createServer((req, res) => {
   res.setHeader('access-control-max-age', '2592000');
 
   if (new URL(req.url ?? '', 'https://localhost').pathname === '/api') {
-    return integro(app)(req, res);
+    return createController(app)(req, res);
   }
 
   res.end();
@@ -25,13 +25,13 @@ createServer((req, res) => {
 
 ```ts [bun]
 import { serve } from 'bun';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app.js';
 
 serve({
   port: 8000,
   fetch: async (req) => {
-    const res = await integro(app)(req);
+    const res = await createController(app)(req);
 
     res.headers.set('access-control-allow-credentials', 'true');
     res.headers.set('access-control-allow-headers', 'Content-Type');
@@ -45,7 +45,7 @@ serve({
 
 ```ts [express]
 import express from 'express';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app';
 
 express()
@@ -57,7 +57,7 @@ express()
 
     next();
   })
-  .use(integro(app))
+  .use(createController(app))
   .listen(8000);
 ```
 

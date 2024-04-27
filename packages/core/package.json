@@ -2,20 +2,20 @@
   "name": "integro",
   "version": "0.3.2",
   "main": "dist/index.js",
-  "browser": "dist/browser.js",
+  "browser": "dist/client.js",
   "module": "dist/index.js",
   "type": "module",
   "exports": {
     ".": "./dist/index.js",
-    "./browser": "./dist/browser.js"
+    "./client": "./dist/client.js"
   },
   "files": ["dist"],
   "license": "MIT",
   "repository": "jpsilva/integro",
   "keywords": ["web", "app", "server", "e2e", "router", "api", "middleware", "rack"],
   "scripts": {
-    "build": "bun build:server && bun build:browser && bun build:types",
-    "build:browser": "bun build src/browser.ts --outdir=dist --target browser",
+    "build": "bun build:server && bun build:client && bun build:types",
+    "build:client": "bun build src/client.ts --outdir=dist --target browser",
     "build:server": "bun build src/index.ts --outdir=dist --target node",
     "build:types": "tsc",
     "lint": "eslint .",

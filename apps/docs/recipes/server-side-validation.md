@@ -1,4 +1,4 @@
-# Server side validation
+# Server-side validation
 
 Type safety can help you avoid most problems at development and build time, but what about protecting the server against unforeseeable bugs or bad actors?
 

@@ -41,8 +41,10 @@ $ bun add integro
 ```ts [app.ts]
 /**
  * Write your API as a monolithic object.
- * Your API object may be a single function, an object
- * containing functions, or nested objects of functions.
+ * Your API object may be
+ * - a single function,
+ * - an object containing functions,
+ * - or nested objects of functions.
  */
 
 export const app = {
@@ -60,11 +62,11 @@ export const app = {
  * express, bun, or any other server library that uses compatible middleware.
  */
 
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { createServer } from 'node:http';
 import { app } from './app';
 
-createServer(integro(app)).listen(8000);
+createServer(createController(app)).listen(8000);
 ```
 
 ```ts [createApiClient.ts]
@@ -72,7 +74,7 @@ createServer(integro(app)).listen(8000);
  * Next, we'll export a typed version of integro's `createClient` function.
  */
 
-import { createClient } from 'integro/browser';
+import { createClient } from 'integro/client';
 import type { app } from './app';
 
 export const createApiClient = createClient<typeof app>;
@@ -83,7 +85,7 @@ export const createApiClient = createClient<typeof app>;
 > [!IMPORTANT]
 > `createApiClient.ts` will be consumed by the client side app, so make sure to do the following:
 > 
-> * If your client is run in the browser, then import `createClient` from 'integro/browser', not 'integro'. If your client happens to be run exclusively on the server (e.g. with SSR), then it doesn't matter which you choose.
+> * If your client is run in the browser, then import `createClient` from 'integro/client', not 'integro'. If your client happens to be run exclusively on the server (e.g. with SSR), then it doesn't matter which you choose.
 > * Import your `app` using the `import type` modifier.
 
 

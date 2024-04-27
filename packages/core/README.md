@@ -37,21 +37,21 @@ Start up the server with one line:
 ```ts
 // server.ts
 
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { createServer } from 'node:http';
 import { app } from './app';
 
-createServer(integro(app)).listen(8000);
+createServer(createController(app)).listen(8000);
 ```
 
 ### Client-side
 
-Create the client-side api proxy object. When using in a browser, `createClient` must be imported from 'integro/browser'. If your client is in node or bun, then `createClient` may be imported from either 'integro' or 'integro/browser'.
+Create the client-side api proxy object. When using in a browser, `createClient` must be imported from 'integro/client'. If your client is in node or bun, then `createClient` may be imported from either 'integro' or 'integro/client'.
 
 ```ts
 // api.ts
 
-import { createClient } from 'integro/browser';
+import { createClient } from 'integro/client';
 import type { App } from '@repo/api';
 
 export const api = createClient<App>('http://localhost:8000');
@@ -74,7 +74,7 @@ Wouldn't be easier if your client app didn't need to depend on integro? Of cours
 ```ts
 // Server repo
 
-import { createClient } from 'integro/browser';
+import { createClient } from 'integro/client';
 import type { app } from './app';
 
 export const createApiClient = createClient<typeof app>;
@@ -184,7 +184,7 @@ The client object is typed as if using regular object nesting:
 ```ts
 // Client
 
-import { createClient } from 'integro/browser';
+import { createClient } from 'integro/client';
 import type { App } from '@repo/api';
 import { getCurrentAuthToken } from './auth';
 
@@ -270,7 +270,7 @@ createServer((req, res) => {
   res.setHeader('access-control-max-age', '2592000');
 
   if (new URL(req.url ?? '', 'https://localhost').pathname === '/api') {
-    return integro(app)(req, res);
+    return createController(app)(req, res);
   }
 
   res.end();
@@ -280,7 +280,7 @@ createServer((req, res) => {
 ```ts
 // Client
 
-import { createClient } from 'integro/browser';
+import { createClient } from 'integro/client';
 import type { App } from "@repo/my-server";
 
 export const api = createClient<App>("http://localhost:8000", {
@@ -342,24 +342,24 @@ export const app = {
 
 ## Framework agnostic
 
-Integro's `integro()` works with servers that accept handlers in the form `(request: IncomingMessage, response: ServerResponse) => void` (such as node:http, express) as well as the Fetch API style `(request: Request) => Response` (such as bun).
+Integro's `createController()` works with servers that accept handlers in the form `(request: IncomingMessage, response: ServerResponse) => void` (such as node:http, express) as well as the Fetch API style `(request: Request) => Response` (such as bun).
 
 ### Node's built-in `http` package
 
 Any route:
 
 ```ts
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { createServer } from 'node:http';
 import { app } from './app';
 
 // Any route
-createServer(integro(app)).listen(8000);
+createServer(createController(app)).listen(8000);
 ```
 
 Specific route:
 ```ts
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { createServer } from 'node:http';
 import { app } from './app';
 
@@ -379,12 +379,12 @@ Any route:
 
 ```ts
 import { serve } from 'bun';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app.js';
 
 serve({
   port: 8000,
-  fetch: integro(app)
+  fetch: createController(app)
 });
 ```
 
@@ -392,14 +392,14 @@ Specific route:
 
 ```ts
 import { serve } from 'bun';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app.js';
 
 serve({
   port: 8000,
   fetch: (req) => {
     if (new URL(req.url).pathname === '/api') {
-      return integro(app)(req);
+      return createController(app)(req);
     }
 
     return Response.error();
@@ -413,11 +413,11 @@ Any route:
 
 ```ts
 import { app } from './app';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import express from 'express';
 
 express()
-  .use(integro(app))
+  .use(createController(app))
   .listen(8000);
 ```
 
@@ -425,10 +425,10 @@ Specific route:
 
 ```ts
 import { app } from './app';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import express from 'express';
 
-const handler = integro(app);
+const handler = createController(app);
 
 express()
   .options('/api', (req, res, next) => {
@@ -449,10 +449,10 @@ With app router:
 ```ts
 // src/api/route.ts
 
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app';
 
-export const POST = integro(app);
+export const POST = createController(app);
 ```
 
 ## Client-side recipies
@@ -472,7 +472,7 @@ Here are a couple examples where `Symbol.toStringTag` proves useful for using in
 // api.ts
 
 import type { createApiClient } from '@repo/api';
-import { AnyClientMethod } from 'integro/browser';
+import { AnyClientMethod } from 'integro/client';
 import useSWR from 'swr';
 
 export const api = createApiClient("http://localhost:8000/api", {
@@ -522,7 +522,7 @@ export const Artist = () => {
 
 import type { createApiClient } from '@repo/api';
 import { useQuery } from '@tanstack/react-query';
-import { AnyClientMethod } from 'integro/browser';
+import { AnyClientMethod } from 'integro/client';
 
 export const api = createApiClient("http://localhost:8000/api", {
   requestInit: { credentials: 'include' }

@@ -1,40 +1,40 @@
-# `integro`
+# `createController`
 
-`integro` is used to convert your app object into a node/express/bun-compliant request handler. This is one of the 2 functions required to run a complete integro app (the other being `createClient`).
+`createController` is used to convert your app object into a node/express/bun-compliant request handler. This is one of the 2 functions required to run a complete integro app (the other being `createClient`).
 
 ## Type definition
 
 ```ts
 type RequestHandler = (request: IncomingMessage | Request, response?: unknown) => Promise<Response>;
 
-const integro: (app: IntegroApp) => RequestHandler;
+const createController: (app: IntegroApp) => RequestHandler;
 ```
 
 ## Usage
 
 
-Integro's `integro()` works with servers that accept handlers in the form `(request: IncomingMessage, response: ServerResponse) => void` (Node's http module, Express) as well as the Fetch API style `(request: Request) => Response` (Bun, Next.js).
+Integro's `createController()` works with servers that accept handlers in the form `(request: IncomingMessage, response: ServerResponse) => void` (Node's http module, Express) as well as the Fetch API style `(request: Request) => Response` (Bun, Next.js).
 
 ### Node's built-in `http` module
 
 ::: code-group
 
 ```ts [Listen to all routes]
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { createServer } from 'node:http'; // or 'node:https'
 import { app } from './app';
 
-createServer(integro(app)).listen(8000);
+createServer(createController(app)).listen(8000);
 ```
 
 ```ts [Specific route]
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { createServer } from 'node:http'; // or 'node:https'
 import { app } from './app';
 
 createServer((req, res) => {
   if (new URL(req.url ?? '', 'https://localhost').pathname === '/api') {
-    return handle(req, res);
+    return createController(req, res);
   }
 
   res.end();
@@ -49,25 +49,25 @@ createServer((req, res) => {
 
 ```ts [Listen to all routes]
 import { serve } from 'bun';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app.js';
 
 serve({
   port: 8000,
-  fetch: integro(app)
+  fetch: createController(app)
 });
 ```
 
 ```ts [Specific route]
 import { serve } from 'bun';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app.js';
 
 serve({
   port: 8000,
   fetch: (req) => {
     if (new URL(req.url).pathname === '/api') {
-      return integro(app)(req);
+      return createController(app)(req);
     }
 
     return Response.error();
@@ -83,20 +83,20 @@ serve({
 
 ```ts [Listen to all routes]
 import { app } from './app';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import express from 'express';
 
 express()
-  .use(integro(app))
+  .use(createController(app))
   .listen(8000);
 ```
 
 ```ts [Specific route]
 import { app } from './app';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import express from 'express';
 
-const handler = integro(app);
+const handler = createController(app);
 
 express()
   .options('/api', handler) // <- Responds with the "Access-Control-Allow-Methods" header set to "OPTIONS, POST"
@@ -115,19 +115,19 @@ You can even serve an integro app from a single route in next.js!
 ```ts [App router]
 // src/api/route.ts
 
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app';
 
-export const POST = integro(app);
+export const POST = createController(app);
 ```
 
 ```ts [Pages router]
 // pages/api/integro.ts
 
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app';
 
-export default integro(app);
+export default createController(app);
 ```
 
 :::

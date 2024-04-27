@@ -19,7 +19,7 @@ const createClient = <T extends IntegroApp>(url = '/', clientConfig?: ClientConf
 ::: code-group
 
 ```ts [Client-side apiClient.ts]
-import { integro } from 'integro/browser';
+import { createController } from 'integro/client';
 import type { App } from '@/api/app';
 
 export apiClient = createClient<App>('https://example.com');
@@ -50,7 +50,7 @@ export apiClient = createApiClient<App>('https://example.com');
 ```
 
 ```ts [Server-side createApiClient.ts]
-import { integro } from 'integro/browser';
+import { createController } from 'integro/client';
 import type { app } from './api';
 
 export createApiClient = createClient<typeof app>;

@@ -15,7 +15,7 @@ Here are a couple examples where `Symbol.toStringTag` proves useful for using in
 
 ```tsx [api.ts]
 import type { createApiClient } from '@/api';
-import { AnyClientMethod } from 'integro/browser';
+import { AnyClientMethod } from 'integro/client';
 import useSWR from 'swr';
 
 export const api = createApiClient("https://example.com/api", {
@@ -67,7 +67,7 @@ export const Artist = () => {
 ```tsx [api.ts]
 import type { createApiClient } from '@/api';
 import { useQuery } from '@tanstack/react-query';
-import { AnyClientMethod } from 'integro/browser';
+import { AnyClientMethod } from 'integro/client';
 
 export const api = createApiClient("https://example.com/api", {
   requestInit: { credentials: 'include' }

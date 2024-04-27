@@ -1,4 +1,4 @@
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app';
 
-export const POST = integro(app);
+export const POST = createController(app);

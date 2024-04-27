@@ -104,7 +104,7 @@ const handleRequest = async (app: IntegroApp, request: Request): Promise<Respons
 
 type RequestHandler = (request: IncomingMessage | Request, response?: unknown) => Promise<Response>;
 
-export const integro = (app: IntegroApp): RequestHandler =>
+export const createController = (app: IntegroApp): RequestHandler =>
   async (request, response) => {
     const usesServerResponse = response instanceof ServerResponse;
     const req = request instanceof Request ? request : await toRequest(request);

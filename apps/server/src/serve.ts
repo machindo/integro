@@ -1,8 +1,8 @@
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { createServer } from 'node:http';
 import { app } from './app';
 
-const handle = integro(app);
+const handle = createController(app);
 
 createServer((req, res) => {
   res.setHeader('access-control-allow-credentials', 'true');

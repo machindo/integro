@@ -1,9 +1,9 @@
 import cookie from 'cookie';
 import express from 'express';
-import { integro } from 'integro';
+import { createController } from 'integro';
 import { app } from './app';
 
-const handler = integro(app);
+const handler = createController(app);
 
 express()
   .use((req, _res, next) => {
