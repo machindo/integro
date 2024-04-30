@@ -4,51 +4,61 @@ import { IncomingMessage } from 'node:http';
 import { Duplex } from 'node:stream';
 import WebSocket, { WebSocketServer } from 'ws';
 import { IntegroApp } from './client.js';
-import { isSubject } from './createSubject.js';
+import { createController } from './createController.js';
 import { BodyParsingError } from './types/errors.js';
 import { everyItemIsString } from './utils/everyItemIsString.js';
 import { resolveProp } from './utils/resolveProp.js';
-import { createController } from './createController.js';
+import { rawDataToBuffer } from './utils/rawDataToBuffer.js';
+
+export type SubscriptionControllerConfig = {
+  subscribeKey?: string;
+};
 
 const getData = (message: ArrayBuffer | Buffer | Buffer[]) => {
-  const buffer = message instanceof Buffer
-    ? message
-    : Array.isArray(message)
-      ? Buffer.concat(message)
-      : Buffer.from(message);
-  const data = unpack(buffer) as { type: string; auth?: string; path: string[] };
-
-  if (typeof data.type !== 'string') {
-    throw new BodyParsingError('Could not parse body. `type` must be a string.');
-  }
-
-  if (data.auth && typeof data.auth !== 'string') {
-    throw new BodyParsingError('Could not parse body. `auth` must be a string or undefined.');
-  }
-
-  if (!Array.isArray(data.path) || !everyItemIsString(data.path)) {
-    throw new BodyParsingError('Could not parse body. `path` must be an array of strings.');
-  }
+  const buffer = rawDataToBuffer(message);
+  const data = unpack(buffer) as { type: string; auth?: string; path: string[]; args: unknown[] };
 
   return data;
 };
 
-export const createSubscriptionController = (app: IntegroApp) => {
+export const createSubscriptionController = (app: IntegroApp, { subscribeKey = 'subscribe' }: SubscriptionControllerConfig = {}) => {
   const subjectUnsubscribes: (() => void)[] = [];
   const unsubscribeAll = () => subjectUnsubscribes.forEach(unsubscribe => unsubscribe());
   const handleMessage = async (ws: ServerWebSocket | WebSocket, message: WebSocket.RawData | string) => {
     if (typeof message === 'string') return;
-
-    const { type, auth, path } = getData(message);
-
-    if (type !== 'subscribe') return;
+    const { type, auth, path, args } = getData(message);
 
     try {
-      const subject = await resolveProp({ path: path.slice(0, path.length - 1), app, context: { type: 'message', auth } });
+      if (typeof type !== 'string') {
+        throw new BodyParsingError('Could not parse body. `type` must be a string.');
+      }
 
-      if (!isSubject(subject)) return;
+      if (auth && typeof auth !== 'string') {
+        throw new BodyParsingError('Could not parse body. `auth` must be a string or undefined.');
+      }
 
-      const unsubscribe = subject.subscribe((message) => {
+      if (!Array.isArray(path) || !everyItemIsString(path)) {
+        throw new BodyParsingError('Could not parse body. `path` must be an array of strings.');
+      }
+
+      if (!Array.isArray(args)) {
+        throw new BodyParsingError('Could not parse body. Args must be an array.');
+      }
+
+      if (type !== 'subscribe') return;
+      if (path.at(-1) !== subscribeKey) return;
+
+      const subscribe = await resolveProp({ path, app, context: { type: 'message', auth } });
+
+      if (typeof subscribe !== 'function') return;
+
+      const unsubscribe = args.length ? subscribe(...args)((message: unknown) => {
+        ws.send(pack({
+          type: 'event',
+          path,
+          message,
+        }));
+      }) : subscribe((message: unknown) => {
         ws.send(pack({
           type: 'event',
           path,
@@ -59,7 +69,7 @@ export const createSubscriptionController = (app: IntegroApp) => {
       subjectUnsubscribes.push(unsubscribe);
     } catch (e) {
       if (e instanceof Error) {
-        ws.send(pack({ type: 'error', path, message: { message: e.message, name: e.name } }))
+        ws.send(pack({ type: 'error', path, message: { message: e.message, name: e.name } }));
       }
     }
   };

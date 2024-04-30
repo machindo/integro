@@ -8,9 +8,10 @@
 type ClientConfig = {
   auth?: string;
   requestInit?: RequestInit | (() => RequestInit);
+  subscribeKey?: string;
 };
 
-const createClient = <T extends IntegroApp>(url = '/', clientConfig?: ClientConfig) => IntegroClient;
+const createClient = <T extends IntegroApp>(url = '/', config?: ClientConfig) => IntegroClient;
 ```
 
 ## Usage
@@ -80,14 +81,14 @@ export const app = {
 
 The first parameter to createClient is an optional string representing the path your server is running on.
 
-### `clientConfig`
+### `config`
 
 **Type:** `ClientConfig`<br>
 **Default:** `{}`
 
 The second parameter to createClient is a configuration object which allows you to manipulate the Request before sending it to the server.
 
-#### `auth`
+#### `config.auth`
 
 **Type:** `string | (() => string | undefined)`<br>
 **Default:** `undefined`
@@ -108,7 +109,7 @@ export const api = createClient<App>('https://example.com', {
 });
 ```
 
-#### `requestInit`
+#### `config.requestInit`
 
 **Type:** `RequestInit | (() => RequestInit)`<br>
 **Default:** `undefined`
@@ -148,3 +149,10 @@ export const api = createClient<App>('https://example.com', {
 ```
 
 :::
+
+#### `config.subscribeKey`
+
+**Type:** `string`<br>
+**Default:** "subscribe"
+
+The leaf endpoint which will trigger a subscription. If creating subscribable endpoints using `createSubject`, then the default "subscribe" should be used.

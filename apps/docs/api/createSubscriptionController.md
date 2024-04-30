@@ -5,7 +5,11 @@
 ## Type definition
 
 ```ts
-const createSubscriptionController: (app: IntegroApp) => {
+type SubscriptionControllerConfig = {
+  subscribeKey?: string;
+};
+
+const createSubscriptionController: (app: IntegroApp, config?: SubscriptionControllerConfig) => {
   createWebSocketServer: (request: IncomingMessage, socket: Duplex, head: Buffer) => void;
   handleRequest: RequestHandler; /* See createController */
   unsubscribeAll: () => void;
@@ -71,3 +75,15 @@ express()
 **Required:** true
 
 Your app object or function.
+
+### `config`
+
+**Type:** `SubscriptionControllerConfig`<br>
+**Default:** `{}`
+
+#### `config.subscribeKey`
+
+**Type:** `string`<br>
+**Default:** "subscribe"
+
+The leaf endpoint which will trigger a subscription. If creating subscribable endpoints using `createSubject`, then the default "subscribe" should be used.

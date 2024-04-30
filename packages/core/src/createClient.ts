@@ -8,6 +8,7 @@ import { isArrayEqual } from './utils/isArrayEqual';
 export type ClientConfig = {
   auth?: string | (() => string | undefined);
   requestInit?: RequestInit | (() => RequestInit);
+  subscribeKey?: string;
 };
 
 const post = async ({
@@ -57,10 +58,10 @@ const post = async ({
   return unpacked;
 };
 
-const subscribe = async ({
+const subscribe = ({
   url,
   config,
-  data: { path, args: [handler] },
+  data: { path, args },
   websocket,
 }: {
   url: string;
@@ -69,9 +70,11 @@ const subscribe = async ({
     path: string[];
     args: unknown[];
   };
-  websocket: { current: WebSocket | undefined }
+  websocket: { current: WebSocket | undefined, isOpen: boolean }
 }) => {
-  if (typeof handler !== 'function') throw new Error('First parameter must be a callback function.')
+  const handler = args[args.length - 1];
+  const sendArgs = args.slice(0, args.length - 1);
+  if (typeof handler !== 'function') throw new Error('Last parameter must be a callback function.')
 
   const listener = (data: ArrayBuffer) => {
     const unpacked = unpack(new Uint8Array(data)) as { type: string; path: string[]; message: unknown };
@@ -90,9 +93,12 @@ const subscribe = async ({
 
   websocket.current.on('error', console.error);
   websocket.current.on('message', listener);
-  websocket.current.on('open', () => {
-    websocket.current?.send(pack({ type: 'subscribe', auth: config.auth, path }));
-  });
+  websocket.isOpen
+    ? websocket.current?.send(pack({ type: 'subscribe', auth: config.auth, path, args: sendArgs }))
+    : websocket.current.on('open', () => {
+      websocket.isOpen = !!websocket.current;
+      websocket.current?.send(pack({ type: 'subscribe', auth: config.auth, path, args: sendArgs }));
+    });
 
   return () => {
     websocket.current?.off('message', listener);
@@ -100,10 +106,10 @@ const subscribe = async ({
 };
 
 export const createClient = <T extends IntegroApp>(url = '/', config: ClientConfig = {}): IntegroClient<T> => {
-  const websocket: { current: WebSocket | undefined } = { current: undefined };
+  const websocket: { current: WebSocket | undefined; isOpen: boolean } = { current: undefined, isOpen: false };
 
   return createProxy<IntegroClient<T>>((path, args) =>
-    path.length >= 2 && path[path.length - 1] === 'subscribe' && path[path.length - 2].endsWith('$')
+    path.length >= 2 && path[path.length - 1] === (config.subscribeKey ?? 'subscribe')
       ? subscribe({
         url,
         config,

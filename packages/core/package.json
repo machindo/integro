@@ -1,6 +1,6 @@
 {
   "name": "integro",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "main": "dist/index.js",
   "browser": "dist/client.js",
   "module": "dist/index.js",

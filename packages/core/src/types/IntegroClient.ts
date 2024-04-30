@@ -1,11 +1,15 @@
 import { SetReturnType } from 'type-fest';
-import { IntegroApp, Handler } from './IntegroApp';
-import { Unwrappable } from '../unwrap';
+import { Subject, SubjectHandler, Subscribe } from '../createSubject';
 import { WithResponseInit } from '../respondWith';
-import { Subject } from '../createSubject';
+import { Unwrappable } from '../unwrap';
+import { Handler, IntegroApp } from './IntegroApp';
 
 type AsyncData<Fn extends Handler> =
-  ReturnType<Fn> extends WithResponseInit<infer U>
+  ReturnType<Fn> extends void
+  ? SetReturnType<Fn, Promise<void>>
+  : ReturnType<Fn> extends Subscribe<infer U>
+  ? (...args: [...Parameters<Fn>, handler: SubjectHandler<U>]) => () => void
+  : ReturnType<Fn> extends WithResponseInit<infer U>
   ? AsyncData<SetReturnType<Fn, U>>
   : ReturnType<Fn> extends Promise<unknown>
   ? Fn
@@ -15,7 +19,7 @@ export type IntegroClient<T extends IntegroApp> =
   T extends Unwrappable<infer U>
   ? IntegroClient<U>
   : T extends Subject<infer U>
-  ? { subscribe: (handler: (message: U, error?: { message: string }) => void) => () => void }
+  ? { subscribe: (handler: SubjectHandler<U>) => () => void }
   : T extends Handler
   ? (AsyncData<T> & { [Symbol.toStringTag]: string })
   : { [K in keyof T]: T[K] extends IntegroApp ? IntegroClient<T[K]> : never };

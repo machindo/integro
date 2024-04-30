@@ -32,6 +32,7 @@ export default defineConfig({
             text: 'Server API',
             items: [
               { text: 'createController', link: '/api/createController' },
+              { text: 'createSubject', link: '/api/createSubject' },
               { text: 'createSubscriptionController', link: '/api/createSubscriptionController' },
               { text: 'respondWith', link: '/api/respondWith' },
               { text: 'unwrap', link: '/api/unwrap' },
