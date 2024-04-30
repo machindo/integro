@@ -45,7 +45,8 @@ import { createSubscriptionController } from 'integro';
 import { app } from './app.js';
 
 const { handleRequest, websocketHandlers } = createSubscriptionController(app);
-const server = Bun.serve({
+
+Bun.serve({
   port: await getPort(),
   fetch: (req, server) => server.upgrade(req) ? undefined : handleRequest(req),
   websocket: websocketHandlers

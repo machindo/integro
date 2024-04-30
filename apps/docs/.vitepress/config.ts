@@ -23,6 +23,7 @@ export default defineConfig({
         items: [
           { text: 'What is Integro?', link: '/introduction/what-is-integro' },
           { text: 'Getting Started', link: '/introduction/getting-started' },
+          { text: 'Subscriptions', link: '/introduction/subscriptions' },
         ],
       },
       {

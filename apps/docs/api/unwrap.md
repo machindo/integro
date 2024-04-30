@@ -10,7 +10,23 @@ It has two primary uses:
 ## Type definition
 
 ```ts
-type WrappedHandler<T extends IntegroApp> = (request: Request) => T | Promise<T>;
+type MessageContext = {
+  type: 'message';
+  auth?: string;
+  request?: undefined;
+};
+
+type RequestContext = {
+  type: 'request';
+  auth?: undefined;
+  request: Request;
+};
+
+type HandlerContext =
+  | MessageContext
+  | RequestContext;
+
+type WrappedHandler<T extends IntegroApp> = (context: HandlerContext) => T | Promise<T>;
 
 const unwrap: <T extends IntegroApp>(handler: WrappedHandler<T>) => T;
 ```
@@ -72,8 +88,8 @@ import { parseBearer } from './authService';
 import { db } from './dbService';
 
 export const app = {
-  users: unwrap((req) => {
-    const token = req.headers.get('Authorization');
+  users: unwrap(({ request }) => {
+    const token = request?.headers.get('Authorization');
 
     if (!token) {
       throw new Error('User is not authenticated!');

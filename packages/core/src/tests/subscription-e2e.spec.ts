@@ -6,7 +6,7 @@ import { createServer } from 'http';
 import WebSocket from 'isomorphic-ws';
 import { pack, unpack } from 'msgpackr';
 import { ClientConfig, createClient } from '../client.js';
-import { SubjectHandler, createSubject } from '../createSubject.js';
+import { createSubject } from '../createSubject.js';
 import { SubscriptionControllerConfig, createSubscriptionController } from '../createSubscriptionController.js';
 import { IntegroApp, unwrap } from '../index.js';
 
@@ -21,8 +21,8 @@ const createServerAPI = () => {
     version: () => '0.1.0',
     articles: {
       list$: {
-        subscribe: (author: string) => (handler: SubjectHandler<ArticleList>) =>
-          articleList$.map((list) => list.filter((article) => article.author === author)).subscribe(handler),
+        subscribe: (author: string) =>
+          articleList$.map((list) => list.filter((article) => article.author === author)).subscribe,
       },
       update$: {
         listen: (author: string) =>
@@ -59,7 +59,7 @@ const serve = async (app: IntegroApp, serverConfig?: SubscriptionControllerConfi
     port,
     server,
     unsubscribeAll
-  }
+  };
 };
 
 const start = async <App extends IntegroApp>(app: App, clientConfig?: ClientConfig, serverConfig?: SubscriptionControllerConfig) => {
