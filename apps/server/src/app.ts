@@ -4,6 +4,11 @@ import z from 'zod';
 import { getArtist } from './api/artists/getArtist';
 import getArtists from './api/artists/getArtists';
 import { upsertArtist } from './api/artists/upsertArtist';
+import { Artist } from './types/Artist';
+
+const onArtistsUpdates = (ws: WebSocket) => (artists: Artist[]) => {
+  ws.send(artists);
+};
 
 export const app = defineApp({
   version: () => '0.2.8',
@@ -24,7 +29,10 @@ export const app = defineApp({
       return {
         deleteAll: () => 'Deleted all!'
       }
-    })
+    }),
+    subscribe: (ws: WebSocket) => {
+      return onArtistsUpdates(ws);
+    },
   },
   auth: {
     login: (username: string, password: string) => {

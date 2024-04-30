@@ -15,6 +15,12 @@ createServer((req, res) => {
   }
 
   res.end();
-}).listen(8000, undefined, () =>
-  console.info(`Integro listening on port 8000 ...`)
-);
+})
+  .on('upgrade', (req, socket) => {
+    socket.on('data', (data) => {
+      
+    })
+  })
+  .listen(8000, undefined, () =>
+    console.info(`Integro listening on port 8000 ...`)
+  );

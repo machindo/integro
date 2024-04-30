@@ -1,20 +1,21 @@
 import { IntegroApp } from './types/IntegroApp';
+import { HandlerContext } from './types/HandlerContext';
 
-const canUnwrappable = Symbol('canUnwrappable');
+const _isUnwrappable = Symbol('isUnwrappable');
 
-export type WrappedHandler<T extends IntegroApp> = (request: Request) => T | Promise<T>;
+export type WrappedHandler<T extends IntegroApp> = (context: HandlerContext) => T | Promise<T>;
 
 export type Unwrappable<T extends IntegroApp> = WrappedHandler<T> & {
-  [canUnwrappable]: true;
+  [_isUnwrappable]: true;
 };
 
 export const unwrap = <T extends IntegroApp>(handler: WrappedHandler<T>): Unwrappable<T> => {
-  const fn = (request: Request) => handler(request);
+  const fn = (context: HandlerContext) => handler(context);
 
-  fn[canUnwrappable] = true as const;
+  fn[_isUnwrappable] = true as const;
 
   return fn;
 };
 
 export const isUnwrappable = <T extends IntegroApp>(fn: unknown): fn is Unwrappable<T> =>
-  typeof fn === 'function' && (fn as Unwrappable<T>)[canUnwrappable] === true
+  typeof fn === 'function' && (fn as Unwrappable<T>)[_isUnwrappable] === true

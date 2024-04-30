@@ -6,6 +6,7 @@
 
 ```ts
 type ClientConfig = {
+  auth?: string;
   requestInit?: RequestInit | (() => RequestInit);
 };
 
@@ -74,7 +75,7 @@ export const app = {
 
 ### `url`
 
-**Type:** string<br>
+**Type:** `string`<br>
 **Default:** "/"
 
 The first parameter to createClient is an optional string representing the path your server is running on.
@@ -85,6 +86,27 @@ The first parameter to createClient is an optional string representing the path 
 **Default:** `{}`
 
 The second parameter to createClient is a configuration object which allows you to manipulate the Request before sending it to the server.
+
+#### `auth`
+
+**Type:** `string | (() => string | undefined)`<br>
+**Default:** `undefined`
+
+Auth token sent in request's "Authorization" header and websocket message body. If supplied, `requestInit.header.Authorization`
+overrides `auth` during fetches. `auth` will be used by websockets regardless.
+
+```ts [Set auth header]
+import { createApiClient } from '@/api';
+import { getCurrentAuthToken } from './authService';
+
+export const api = createClient<App>('https://example.com', {
+  auth: () => {
+    const currentAuthToken = getCurrentAuthToken();
+
+    return currentAuthToken && `bearer ${currentAuthToken}`;
+  }),
+});
+```
 
 #### `requestInit`
 
@@ -102,9 +124,9 @@ import { createApiClient } from '@/api';
 export const api = createApiClient("https://example.com", {
   requestInit: {
     headers: {
-      credentials: 'include'
-    }
-  }
+      credentials: 'include',
+    },
+  },
 });
 ```
 
@@ -118,10 +140,10 @@ export const api = createClient<App>('https://example.com', {
 
     return currentAuthToken ? {
       headers: {
-        'Authorization': `bearer ${currentAuthToken}`
-      }
+        'Authorization': `bearer ${currentAuthToken}`,
+      },
     } : {};
-  })
+  }),
 });
 ```
 

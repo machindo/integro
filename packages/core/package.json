@@ -9,14 +9,25 @@
     ".": "./dist/index.js",
     "./client": "./dist/client.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "license": "MIT",
   "repository": "jpsilva/integro",
-  "keywords": ["web", "app", "server", "e2e", "router", "api", "middleware", "rack"],
+  "keywords": [
+    "web",
+    "app",
+    "server",
+    "e2e",
+    "router",
+    "api",
+    "middleware",
+    "rack"
+  ],
   "scripts": {
     "build": "bun build:server && bun build:client && bun build:types",
-    "build:client": "bun build src/client.ts --outdir=dist --target browser",
-    "build:server": "bun build src/index.ts --outdir=dist --target node",
+    "build:client": "bun build src/client.ts --outdir=dist --target browser --minify",
+    "build:server": "bun build src/index.ts --outdir=dist --target node --minify",
     "build:types": "tsc",
     "lint": "eslint .",
     "prepublishOnly": "rm -rf dist && rm tsconfig.tsbuildinfo; bun run build",
@@ -29,6 +40,7 @@
     "@types/bun": "latest",
     "@types/node": "latest",
     "del-cli": "^5.1.0",
+    "express": "^4.19.2",
     "get-port": "^7.1.0",
     "tstyche": "^1.1.0",
     "type-fest": "^4.15.0",
@@ -39,6 +51,8 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "msgpackr": "^1.10.1"
+    "isomorphic-ws": "^5.0.0",
+    "msgpackr": "^1.10.1",
+    "ws": "^8.17.0"
   }
 }

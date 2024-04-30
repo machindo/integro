@@ -6,6 +6,7 @@ module.exports = {
   extends: ['@integro/eslint-config/library.js'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: true,
+    project: './tsconfig.lint.json',
+    tsconfigRootDir: __dirname,
   },
 };

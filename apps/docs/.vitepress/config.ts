@@ -1,9 +1,15 @@
 import { defineConfig } from 'vitepress'
+import taskLists from 'markdown-it-task-lists';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Integro",
   description: "Seamless API integration",
+  markdown: {
+    config: md => {
+      md.use(taskLists);
+    }
+  },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
@@ -17,15 +23,16 @@ export default defineConfig({
         items: [
           { text: 'What is Integro?', link: '/introduction/what-is-integro' },
           { text: 'Getting Started', link: '/introduction/getting-started' },
-        ]
+        ],
       },
       {
-        text: 'API',
+        text: 'API reference',
         items: [
           {
             text: 'Server API',
             items: [
               { text: 'createController', link: '/api/createController' },
+              { text: 'createSubscriptionController', link: '/api/createSubscriptionController' },
               { text: 'respondWith', link: '/api/respondWith' },
               { text: 'unwrap', link: '/api/unwrap' },
               { text: 'defineApp', link: '/api/defineApp' },
@@ -47,6 +54,10 @@ export default defineConfig({
           { text: 'React', link: '/recipes/react' },
         ]
       },
+      {
+        text: 'Roadmap',
+        link: 'roadmap',
+      }
     ],
 
     socialLinks: [

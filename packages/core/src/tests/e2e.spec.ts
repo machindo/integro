@@ -5,6 +5,7 @@ import { createServer as createHttpsServer } from 'https';
 import { pack, unpack } from 'msgpackr';
 import { ClientConfig, createClient } from '../client';
 import { IntegroApp, createController, respondWith, unwrap } from '../index';
+import express from 'express';
 
 const artists = [
   { id: 'clvfae6bu0000cgvc4ufm336g', name: 'miles', dob: new Date('1926-05-26') },
@@ -32,7 +33,7 @@ const serverAPI = {
   },
   nestedApp: unwrap(() => import('./nestedApp.spec').then(module => module.nestedApp)),
   nestedFunction: unwrap(() => import('./nestedFunction.spec').then(module => module.nestedFunction)),
-  getAuthHeader: unwrap(req => () => req.headers.get('Authorization')),
+  getAuthHeader: unwrap(({ request }) => () => request?.headers.get('Authorization')),
   teapot: {
     makeCoffee: () => respondWith({ message: "I'm a teapot" }, { status: 418 }),
   },
@@ -228,7 +229,17 @@ test('works with node https server', async () => {
   server.close();
 });
 
-// Error caused by not using integro client...
+test('works with express', async () => {
+  const port = await getPort();
+  const client = createClient<typeof serverAPI>(`http://localhost:${port}`);
+  const server = express().use(createController(serverAPI)).listen(port);
+
+  expect(client.version()).resolves.toBe('0.1.0');
+
+  server.close();
+});
+
+// Test errors caused by not using integro client...
 
 test('errors when request path is not present', async () => {
   const server = await serve(serverAPI);
@@ -301,7 +312,7 @@ test('errors when requested path is not found', async () => {
 test('responds to OPTIONS with allowed methods', async () => {
   const server = await serve({});
   const res = await fetch(`http://localhost:${server.port}`, { method: 'OPTIONS' });
-  
+
   expect(res.headers.get('Access-Control-Allow-Methods')).toBe('OPTIONS, POST');
 });
 

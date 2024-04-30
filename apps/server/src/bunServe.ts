@@ -13,6 +13,11 @@ serve({
     res.headers.set('access-control-max-age', '2592000');
 
     return res;
+  },
+  websocket: {
+    message: (ws, message) => {
+      ws
+    }
   }
 });
 
