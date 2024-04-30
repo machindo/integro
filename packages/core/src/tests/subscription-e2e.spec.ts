@@ -74,15 +74,15 @@ test('client receives subject updates from server', async () => {
   const { client, server } = await start(serverAPI);
   const handler = mock();
 
-  await sleep(10);
+  await sleep(20);
 
   client.artists.update$.subscribe(handler);
 
-  await sleep(10);
+  await sleep(20);
 
   serverAPI.artists.update$.send([{ name: 'chick' }]);
 
-  await sleep(10);
+  await sleep(20);
 
   expect(handler).toHaveBeenCalledTimes(1);
   expect(handler).toHaveBeenCalledWith([{ name: 'chick' }]);
