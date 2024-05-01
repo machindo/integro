@@ -23,8 +23,8 @@ features:
     details: With integro, publishing and subscribing to events couldn't be easier. Upgrade to web sockets with 1 additional line of code.
   - title: Framework agnostic
     details: Integro supports Node's http/s, Bun.serve, Express, and more. You can also plug it into your existing REST API.
-  - title: Simple authorization
-    details: Write functions on the server. Call those functions from the client, types included.
+  - title: Authentication/authorization
+    details: Send authorization token with both requests and web socket, to verify the user before responding or allowing subscriptions.
   - title: Server-side validation made easy
     details: Works with many popular validation libraries, including Zod, Typia, and Prisma's built-in validation.
 ---
