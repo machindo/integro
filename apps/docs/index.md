@@ -5,7 +5,7 @@ layout: home
 hero:
   name: "Integro"
   text: "Seamless API integration with E2E integrity."
-  tagline: Node API service with automatic client-side type safety.
+  tagline: Convert your app into an API server+client with end-to-end type safety in 2 lines.
   actions:
     - theme: brand
       text: What is integro?
@@ -17,12 +17,11 @@ hero:
 features:
   - title: Seamless integration
     details: |
-      Write functions on the server. Call those functions from the client. It's that easy.
-  - title: E2E type-safety
-    details: |
-      The client app is automatically typed to match the server functions' parameters and return types, with no build step.
+      Write functions on the server. Call those functions from the client, types included.
   - title: Framework agnostic
     details: |
-      On the backend, integro works with Node's http or https module, Bun's serve method, Express.js, and more.
-      On the frontend, integro works with with any framework or vanilla JavaScript.
+      Integro supports Node's http/s, Bun.serve, Express, and more.
+  - title: Pub/Sub
+    details: |
+      With integro, publishing and subscribing to events couldn't be easier.
 ---

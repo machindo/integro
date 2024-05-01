@@ -5,13 +5,18 @@ import taskLists from 'markdown-it-task-lists';
 export default defineConfig({
   title: "Integro",
   description: "Seamless API integration",
+  head: [
+    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+  ],
   markdown: {
     config: md => {
       md.use(taskLists);
     }
   },
   themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
+    logo: '/logo.svg',
+
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Getting Started', link: '/introduction/getting-started' },
@@ -64,6 +69,11 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/jpsilva/integro' }
-    ]
+    ],
+
+    footer: {
+      message: 'Released under the MIT License.',
+      copyright: 'Copyright © 2024-present Justin Paul Silva'
+    },
   }
 })

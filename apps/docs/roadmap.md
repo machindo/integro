@@ -14,5 +14,7 @@
 - [x] Read request object in handler
 - [x] Customize response object in handler
 - [x] Subscribe to change events via web sockets
-- [ ] Parameterized subscriptions
+- [x] Parameterized subscriptions
 - [ ] Send data from the client via web sockets
+- [ ] Automatically unsubscribe from subjects when web sockets lose connection
+- [ ] Automatically reconnect to failed web sockets
