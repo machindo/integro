@@ -16,12 +16,15 @@ hero:
 
 features:
   - title: Seamless integration
-    details: |
-      Write functions on the server. Call those functions from the client, types included.
-  - title: Framework agnostic
-    details: |
-      Integro supports Node's http/s, Bun.serve, Express, and more.
+    details: Write functions on the server. Call those functions from the client, types included. Don't waste time designing and maintaining your endpoints.
+  - title: Go beyond JSON
+    details: Integro uses MessagePack internally to send nearly any data type to and from the server, including binary data and JS Dates.
   - title: Pub/Sub
-    details: |
-      With integro, publishing and subscribing to events couldn't be easier.
+    details: With integro, publishing and subscribing to events couldn't be easier. Upgrade to web sockets with 1 additional line of code.
+  - title: Framework agnostic
+    details: Integro supports Node's http/s, Bun.serve, Express, and more. You can also plug it into your existing REST API.
+  - title: Simple authorization
+    details: Write functions on the server. Call those functions from the client, types included.
+  - title: Server-side validation made easy
+    details: Works with many popular validation libraries, including Zod, Typia, and Prisma's built-in validation.
 ---

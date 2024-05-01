@@ -117,3 +117,53 @@ const apiClient: {
   };
 };
 ```
+
+## With subscriptions
+
+`unwrap` can be also used with subscriptions. However, there are two important things to note:
+
+- The context object will not contain a `request` object because subscriptions are made via web sockets. Instead,
+  the `auth` parameter (passed to `createClient`) can be used for authentication.
+- `createSubject` should not be called inside the `unwrap` function. Doing so would make the subject scoped
+  to the function body and we wouldn't be able to invoke it from elsewhere in the app.
+
+::: code-group
+
+```ts [Server-side]
+type Article = { author: string; content: string };
+
+const articleCreation$ = createSubject<Article>();
+
+const app = {
+  articles: unwrap(async ({ auth }) => {
+    const user = auth && await userService.getUserByToken(auth);
+
+    if (!user) throw new Error('Unauthenticated!')
+
+    return {
+      create: async (article: Article) => {
+        await db.save(article);
+
+        // Notify subscribers
+        articleCreation$.send(article);
+      },
+      myCreation$: {
+        subscribe: (author: string) =>
+          articleCreation$.filter((article) => article.author === user.name).subscribe,
+      },
+    };
+  }),
+};
+```
+
+```ts [Client-side]
+const api = createClient<App>('https://example.com/api', { auth: 'user.auth.token' });
+
+api.articles.myCreation.subscribe(console.log);
+// -> { author: 'Me', content: '...' }
+
+api.articles.create({ author: 'Someone else', content: '...' });
+api.articles.create({ author: 'Me', content: '...' });
+```
+
+:::

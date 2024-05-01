@@ -22,6 +22,10 @@ export default defineConfig({
       { text: 'Getting Started', link: '/introduction/getting-started' },
     ],
 
+    search: {
+      provider: 'local'
+    },
+
     sidebar: [
       {
         text: 'Introduction',
@@ -68,7 +72,8 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/jpsilva/integro' }
+      { icon: 'github', link: 'https://github.com/jpsilva/integro' },
+      { icon: 'npm', link: 'https://www.npmjs.com/package/integro' },
     ],
 
     footer: {
