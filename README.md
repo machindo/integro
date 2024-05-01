@@ -1,5 +1,12 @@
 # Integro
 
+[![npm version](https://img.shields.io/npm/v/integro)](https://www.npmjs.org/package/integro)
+[![npm bundle size](https://img.shields.io/bundlephobia/min/integro)](https://bundlephobia.com/package/integro)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/integro)](https://bundlephobia.com/package/integro)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jpsilva/integro/validate.yml?label=build+and+test)
+[![types](https://img.shields.io/npm/types/integro)](README.md)
+[![license](https://img.shields.io/npm/l/integro)](./LICENSE.md)
+
 API integration with E2E integrity. Node API service with automatic client-side type safety.
 
 ## Warning
