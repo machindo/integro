@@ -1,4 +1,3 @@
-import type { PrismaPromise } from '@prisma/client';
 import { AsyncReturnType, SetReturnType } from 'type-fest';
 import { Subject, SubjectHandler, Subscribe } from '../createSubject';
 import { WithResponseInit } from '../respondWith';
@@ -12,7 +11,7 @@ type AsyncData<Fn extends Handler> =
   ? (...args: [...Parameters<Fn>, handler: SubjectHandler<U>]) => () => void
   : ReturnType<Fn> extends WithResponseInit<infer U>
   ? AsyncData<SetReturnType<Fn, U>>
-  : ReturnType<Fn> extends PrismaPromise<unknown>
+  : ReturnType<Fn> extends Promise<unknown>
   ? Fn
   : SetReturnType<Fn, Promise<AsyncReturnType<Fn>>>;
 
