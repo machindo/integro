@@ -20,13 +20,13 @@ export const app = defineApp({
     get: getArtist,
     list: getArtists,
     upsert: upsertArtist,
-    delete: unwrap(({ request }) => {
-      if (!request?.headers.get('Authorization')) throw new Error('User does not have permission to delete artists!');
+    delete: unwrap((context) => {
+      if (!context.request?.headers.get('Authorization')) throw new Error('User does not have permission to delete artists!');
 
       return (id: string) => `Deleted ${id} forever and ever!`;
     }),
-    admin: unwrap(({ request }) => {
-      if (request?.headers.get('Authorization') !== 'admin') throw new Error('User does not have admin permissions!');
+    admin: unwrap((context) => {
+      if (context.request?.headers.get('Authorization') !== 'admin') throw new Error('User does not have admin permissions!');
 
       return {
         deleteAll: () => 'Deleted all!'
