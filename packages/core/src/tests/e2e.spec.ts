@@ -11,7 +11,7 @@ const artists = [
   { id: 'clvfae6bu0000cgvc4ufm336g', name: 'miles', dob: new Date('1926-05-26') },
   { id: 'clvfaey730002cgvc5th8e890', name: 'monk', dob: new Date('1917-10-10') },
   { id: 'clvfaf07y0004cgvcbw5f7fda', name: 'mingus', dob: new Date('1922-04-22') },
-]
+];
 
 const serverAPI = {
   '': () => 'empty',
@@ -30,6 +30,9 @@ const serverAPI = {
         })
     },
     dangerous: () => { throw new Error() },
+  },
+  get lazyApp() {
+    return import('./nestedApp.spec').then(module => module.nestedApp);
   },
   nestedApp: unwrap(() => import('./nestedApp.spec').then(module => module.nestedApp)),
   nestedFunction: unwrap(() => import('./nestedFunction.spec').then(module => module.nestedFunction)),
@@ -55,32 +58,32 @@ test('resolves single function api', async () => {
   const app = () => 'hello';
   const { client } = await start(app);
 
-  return expect(client()).resolves.toBe('hello');
+  return expect(client().then()).resolves.toBe('hello');
 });
 
 test('resolves single function api with args', async () => {
   const app = (name: string) => `hello, ${name}`;
   const { client } = await start(app);
 
-  return expect(client('duke')).resolves.toBe('hello, duke');
+  return expect(client('duke').then()).resolves.toBe('hello, duke');
 });
 
 test('resolves version', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.version()).resolves.toBe('0.1.0');
+  return expect(client.version().then()).resolves.toBe('0.1.0');
 });
 
 test('resolves empty string function', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client['']()).resolves.toBe('empty');
+  return expect(client['']().then()).resolves.toBe('empty');
 });
 
 test('resolves nested function', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.artists.findById('clvfaf07y0004cgvcbw5f7fda')).resolves.toEqual({
+  return expect(client.artists.findById('clvfaf07y0004cgvcbw5f7fda').then()).resolves.toEqual({
     id: 'clvfaf07y0004cgvcbw5f7fda', name: 'mingus', dob: new Date('1922-04-22')
   });
 });
@@ -88,7 +91,7 @@ test('resolves nested function', async () => {
 test('resolves nested async function', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.artists.findByName('miles')).resolves.toEqual({
+  return expect(client.artists.findByName('miles').then()).resolves.toEqual({
     id: 'clvfae6bu0000cgvc4ufm336g', name: 'miles', dob: new Date('1926-05-26')
   });
 });
@@ -96,19 +99,19 @@ test('resolves nested async function', async () => {
 test('unwraps dynamically imported module app', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.nestedApp.getName()).resolves.toBe("I'm a nested app!");
+  return expect(client.nestedApp.getName().then()).resolves.toBe("I'm a nested app!");
 });
 
 test('unwraps dynamically imported module function', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.nestedFunction()).resolves.toBe("I'm a nested function!");
+  return expect(client.nestedFunction().then()).resolves.toBe("I'm a nested function!");
 });
 
 test('unwraps twice dynamically imported module function', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.nestedApp.nestedFunction()).resolves.toBe("I'm a nested function!");
+  return expect(client.nestedApp.nestedFunction().then()).resolves.toBe("I'm a nested function!");
 });
 
 test('unwrap provides request object', async () => {
@@ -118,7 +121,7 @@ test('unwrap provides request object', async () => {
     }
   });
 
-  return expect(client.getAuthHeader()).resolves.toBe("Do you know who I am?!");
+  return expect(client.getAuthHeader().then()).resolves.toBe("Do you know who I am?!");
 });
 
 test('client method includes pathname', () => {
@@ -200,13 +203,13 @@ test('respondWith status code works with node http server', async () => {
 test('rejects with custom error message', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.teapot.makeCoffee()).rejects.toThrowError("I'm a teapot");
+  return expect(client.teapot.makeCoffee().then()).rejects.toThrowError("I'm a teapot");
 });
 
 test('rejects without custom error message', async () => {
   const { client } = await start(serverAPI);
 
-  return expect(client.auth.dangerous()).rejects.toThrowError("The server responded in error.");
+  return expect(client.auth.dangerous().then()).rejects.toThrowError("The server responded in error.");
 });
 
 test('works with node http server', async () => {
@@ -214,7 +217,7 @@ test('works with node http server', async () => {
   const client = createClient<typeof serverAPI>(`http://localhost:${port}`);
   const server = createHttpServer(createController(serverAPI)).listen(port);
 
-  expect(client.version()).resolves.toBe('0.1.0');
+  expect(client.version().then()).resolves.toBe('0.1.0');
 
   server.close();
 });
@@ -224,7 +227,7 @@ test('works with node https server', async () => {
   const client = createClient<typeof serverAPI>(`http://localhost:${port}`);
   const server = createHttpsServer(createController(serverAPI)).listen(port);
 
-  expect(client.version()).resolves.toBe('0.1.0');
+  expect(client.version().then()).resolves.toBe('0.1.0');
 
   server.close();
 });
@@ -234,7 +237,7 @@ test('works with express', async () => {
   const client = createClient<typeof serverAPI>(`http://localhost:${port}`);
   const server = express().use(createController(serverAPI)).listen(port);
 
-  expect(client.version()).resolves.toBe('0.1.0');
+  expect(client.version().then()).resolves.toBe('0.1.0');
 
   server.close();
 });
@@ -299,14 +302,14 @@ test('errors when requested path is not a function', async () => {
   const { client } = await start(serverAPI);
 
   // @ts-expect-error: client.artists should not be a function
-  return expect(client.artists()).rejects.toThrowError('Path "artists" could not be found in the app.');
+  return expect(client.artists().then()).rejects.toThrowError('Path "artists" could not be found in the app.');
 });
 
 test('errors when requested path is not found', async () => {
   const { client } = await start(serverAPI);
 
   // @ts-expect-error: client.artists.findByInstrument should be undefined
-  return expect(client.artists.findByInstrument()).rejects.toThrowError('Path "artists.findByInstrument" could not be found in the app.');
+  return expect(client.artists.findByInstrument().then()).rejects.toThrowError('Path "artists.findByInstrument" could not be found in the app.');
 });
 
 test('responds to OPTIONS with allowed methods', async () => {

@@ -5,6 +5,7 @@ import { getArtist } from './api/artists/getArtist';
 import getArtists from './api/artists/getArtists';
 import { upsertArtist } from './api/artists/upsertArtist';
 import { Artist } from './types/Artist';
+import { prisma } from './prisma';
 
 const onArtistsUpdates = (ws: WebSocket) => (artists: Artist[]) => {
   ws.send(artists);
@@ -15,24 +16,25 @@ export const app = defineApp({
   serverDate: () => new Date(),
   artists: {
     create: unwrap(() => import('./api/artists/createArtist').then(module => module.createArtist)),
+    findFirst: prisma.artist.findFirst,
     get: getArtist,
     list: getArtists,
     upsert: upsertArtist,
-    delete: unwrap(req => {
-      if (!req.headers.get('Authorization')) throw new Error('User does not have permission to delete artists!');
+    delete: unwrap(({ request }) => {
+      if (!request?.headers.get('Authorization')) throw new Error('User does not have permission to delete artists!');
 
       return (id: string) => `Deleted ${id} forever and ever!`;
     }),
-    admin: unwrap(req => {
-      if (req.headers.get('Authorization') !== 'admin') throw new Error('User does not have admin permissions!');
+    admin: unwrap(({ request }) => {
+      if (request?.headers.get('Authorization') !== 'admin') throw new Error('User does not have admin permissions!');
 
       return {
         deleteAll: () => 'Deleted all!'
       }
     }),
-    subscribe: (ws: WebSocket) => {
-      return onArtistsUpdates(ws);
-    },
+    // subscribe: (ws: WebSocket) => {
+    //   return onArtistsUpdates(ws);
+    // },
   },
   auth: {
     login: (username: string, password: string) => {

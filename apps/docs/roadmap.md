@@ -18,3 +18,4 @@
 - [ ] Send data from the client via web sockets
 - [ ] Automatically unsubscribe from subjects when web sockets lose connection
 - [ ] Automatically reconnect to failed web sockets
+- [ ] Batched requests

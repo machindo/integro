@@ -53,6 +53,7 @@ export default defineConfig({
             text: 'Client API',
             items: [
               { text: 'createClient', link: '/api/createClient' },
+              { text: 'batch', link: '/api/batch' },
             ]
           },
         ]

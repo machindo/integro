@@ -1,6 +1,8 @@
 import { expect, test } from "tstyche";
+import { batch } from '../batch.js';
 import { createClient } from '../createClient';
 import { respondWith } from '../respondWith';
+import { prisma } from '../tests/prisma.spec.js';
 import { unwrap } from '../unwrap';
 
 type Method<Args extends unknown[], Return> = ((...args: Args) => Promise<Return>) & { [Symbol.toStringTag]: string; }
@@ -32,10 +34,10 @@ test('nested api', () => {
   const api = {
     genres: {
       blues: {
-        getByName: (_name: string) => ({ } as BluesMan)
+        getByName: (_name: string) => ({} as BluesMan)
       },
       jazz: {
-        getByName: (_name: string) => ({ } as JazzMan)
+        getByName: (_name: string) => ({} as JazzMan)
       }
     }
   };
@@ -84,4 +86,38 @@ test('gets body type from respondWith', () => {
       logout: Method<[], { message: string }>;
     };
   }>();
+});
+
+test('infers basic type from PrismaPromise', async () => {
+  const api = { findArtist: prisma.artist.findFirst };
+  const client = createClient<typeof api>();
+  const res = await client.findArtist();
+
+  expect(res).type.toEqual<{ id: string; name: string; } | null>();
+});
+
+test('infers nested types from PrismaPromise', async () => {
+  const api = { findArtist: prisma.artist.findFirst };
+  const client = createClient<typeof api>();
+  const res = await client.findArtist({ select: { name: true, instruments: true } });
+
+  expect(res).type.toEqual<{
+    name: string; instruments: { id: string; name: string; family: string; artistId: string | null; }[]
+  } | null>();
+});
+
+test('infers nested types when using batch', async () => {
+  const api = { getVersion: () => '1.0.0', findArtist: prisma.artist.findFirst };
+  const client = createClient<typeof api>();
+  const res = await batch([
+    client.getVersion(),
+    client.findArtist({ select: { name: true, instruments: true } }),
+  ]);
+
+  expect(res).type.toEqual<[
+    PromiseSettledResult<string>,
+    PromiseSettledResult<{
+      name: string; instruments: { id: string; name: string; family: string; artistId: string | null; }[]
+    } | null>,
+  ]>();
 });

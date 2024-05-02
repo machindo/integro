@@ -154,7 +154,7 @@ test('client fetches http even with websocket connection open', async () => {
 
   await sleep(10);
 
-  expect(client.version()).resolves.toBe('0.1.0');
+  expect(client.version().then()).resolves.toBe('0.1.0');
 
   server.close();
 });
@@ -189,7 +189,7 @@ test.skipIf(!process.isBun)('web sockets work with bun', async () => {
   server.stop();
 });
 
-test.skipIf(!process.isBun)('client fetches http even with websocket connection open (the bun version)', async () => {
+test.skipIf(!process.isBun)('client fetches http even with websocket connection open (bun)', async () => {
   const { serverAPI } = createServerAPI();
   const { handleRequest, websocketHandlers } = createSubscriptionController(serverAPI);
   const handler = mock();
@@ -207,7 +207,7 @@ test.skipIf(!process.isBun)('client fetches http even with websocket connection 
 
   await sleep(10);
 
-  expect(client.version()).resolves.toBe('0.1.0');
+  expect(client.version().then()).resolves.toBe('0.1.0');
 
   server.stop();
 });
@@ -463,7 +463,7 @@ test('throws error when accessing subject.send via HTTP', async () => {
   const { client, server } = await start(serverAPI);
 
   // @ts-expect-error: send is not accessible by the client
-  expect(client.artists.update$.send()).rejects.toThrowError('Subjects may not be accessed by the client.');
+  expect(client.artists.update$.send().then()).rejects.toThrowError('Subjects may not be accessed by the client.');
 
   server.close();
 });

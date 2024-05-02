@@ -156,3 +156,27 @@ export const api = createClient<App>('https://example.com', {
 **Default:** "subscribe"
 
 The leaf endpoint which will trigger a subscription. If creating subscribable endpoints using `createSubject`, then the default "subscribe" should be used.
+
+## `IntegroPromise` behavior
+
+All client methods return instances of `IntegroPromise`. These are "lazy" promises, which means
+they only execute when you call `await`, `.then()`, `.catch()` or `.finally()`. This makes it
+possible to [batch API calls](./batch).
+
+```ts
+const promise = api.artists.findById(validId); // not executed yet
+
+await promise; // executed here
+```
+
+Most of the time, you'll await a method immediately. But in cases where you need to begin execution
+immediately without waiting for the results, you can trigger the execution with `.then()` without
+passing it a callback.
+
+```ts
+test('it fetches an artist from the API', () => {
+  const promise = api.artists.findById(validId).then();
+
+  expect(promise).resolves.toEqual({ /* ... */ });
+});
+```

@@ -5,7 +5,7 @@ layout: home
 hero:
   name: "Integro"
   text: "Seamless API integration with E2E integrity."
-  tagline: Convert your app into an API server+client with end-to-end type safety in 2 lines.
+  tagline: Convert your app into an API server+client with end-to-end type safety in just 2 lines.
   actions:
     - theme: brand
       text: What is integro?
@@ -24,7 +24,7 @@ features:
   - title: Framework agnostic
     details: Integro supports Node's http/s, Bun.serve, Express, and more. You can also plug it into your existing REST API.
   - title: Authentication/authorization
-    details: Send authorization token with both requests and web socket, to verify the user before responding or allowing subscriptions.
+    details: Send authorization token with both requests and web sockets, to verify the user before responding or allowing subscriptions.
   - title: Server-side validation made easy
     details: Works with many popular validation libraries, including Zod, Typia, and Prisma's built-in validation.
 ---

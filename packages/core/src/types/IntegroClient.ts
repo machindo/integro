@@ -1,4 +1,5 @@
-import { SetReturnType } from 'type-fest';
+import type { PrismaPromise } from '@prisma/client';
+import { AsyncReturnType, SetReturnType } from 'type-fest';
 import { Subject, SubjectHandler, Subscribe } from '../createSubject';
 import { WithResponseInit } from '../respondWith';
 import { Unwrappable } from '../unwrap';
@@ -11,9 +12,9 @@ type AsyncData<Fn extends Handler> =
   ? (...args: [...Parameters<Fn>, handler: SubjectHandler<U>]) => () => void
   : ReturnType<Fn> extends WithResponseInit<infer U>
   ? AsyncData<SetReturnType<Fn, U>>
-  : ReturnType<Fn> extends Promise<unknown>
+  : ReturnType<Fn> extends PrismaPromise<unknown>
   ? Fn
-  : SetReturnType<Fn, Promise<ReturnType<Fn>>>;
+  : SetReturnType<Fn, Promise<AsyncReturnType<Fn>>>;
 
 export type IntegroClient<T extends IntegroApp> =
   T extends Unwrappable<infer U>

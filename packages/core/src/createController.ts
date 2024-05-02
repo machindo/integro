@@ -7,6 +7,11 @@ import { everyItemIsString } from './utils/everyItemIsString';
 import { resolveProp } from './utils/resolveProp';
 import { toRequest } from './utils/toRequest';
 
+type RequestData = {
+  args: unknown[];
+  path: string[];
+};
+
 const accessHeaders = {
   "Access-Control-Allow-Methods": "OPTIONS, POST"
 } as const;
@@ -14,37 +19,56 @@ const accessHeaders = {
 const getData = async (req: Request) => {
   const arrayBuffer = await req.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  const data = unpack(buffer) as { path: string[], args: unknown[] };
-
-  if (!Array.isArray(data.path) || !everyItemIsString(data.path)) {
-    throw new BodyParsingError('Could not parse body. Path must be an array of strings.');
-  }
-
-  if (!Array.isArray(data.args)) {
-    throw new BodyParsingError('Could not parse body. Args must be an array.');
-  }
-
-  return data;
+  return unpack(buffer) as { path: string[], args: unknown[] };
 };
+
+const assertRequestData = (data: unknown) => {
+  if (!data || typeof data !== 'object')
+    throw new BodyParsingError('Could not parse body. Path must be an array of strings.');
+  if (!('path' in data) || !Array.isArray(data.path) || !everyItemIsString(data.path))
+    throw new BodyParsingError('Could not parse body. Path must be an array of strings.');
+  if (!('args' in data) || !Array.isArray(data.args))
+    throw new BodyParsingError('Could not parse body. Args must be an array.');
+
+  return data as RequestData;
+}
 
 const encodeResponse = (data: unknown, responseInit?: ResponseInit) =>
   new Response(pack(data), responseInit)
 
+const merge = <T extends object>(objects: T[]): T => Object.assign({}, ...objects);
+
 const handleRequest = async (app: IntegroApp, request: Request): Promise<Response> => {
   try {
-    const { args, path } = await getData(request);
+    const rawData = await getData(request);
+    const isBatch = Array.isArray(rawData);
+    const inputs = isBatch ? rawData.map(assertRequestData) : [assertRequestData(rawData)];
+    const results = await Promise.allSettled(inputs.map(async ({ args, path }) => {
+      const handler = await resolveProp({ path, app, context: { type: 'request', request } });
 
-    const handler = await resolveProp({ path, app, context: { type: 'request', request } });
+      if (typeof handler !== "function") {
+        throw new PathError(`Path "${path.join('.')}" could not be found in the app.`);
+      }
 
-    if (typeof handler !== "function") {
-      throw new PathError(`Path "${path.join('.')}" could not be found in the app.`);
+      return handler(...args);
+    }));
+
+    if (isBatch) {
+      return encodeResponse(
+        results.map(res => (res.status === 'fulfilled' && isResponseInitObject(res.value)) ? { ...res, value: res.value.data } : res),
+        merge(results.map(res => (res.status === 'fulfilled' && isResponseInitObject(res.value) && res.value.responseInit) || {}))
+      );
     }
 
-    const res = await handler(...args);
+    const res = results[0];
 
-    return isResponseInitObject(res)
-      ? encodeResponse(res.data, res.responseInit)
-      : encodeResponse(res);
+    if (res.status === 'rejected') {
+      throw res.reason;
+    }
+
+    return isResponseInitObject(res.value)
+      ? encodeResponse(res.value.data, res.value.responseInit)
+      : encodeResponse(res.value);
   } catch (e) {
     if (e instanceof BodyParsingError) {
       return encodeResponse({ message: e.message }, { status: 400 });

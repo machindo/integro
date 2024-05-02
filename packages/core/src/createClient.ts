@@ -4,6 +4,7 @@ import { IntegroApp } from './types/IntegroApp';
 import { IntegroClient } from './types/IntegroClient';
 import { createProxy } from './utils/createProxy';
 import { isArrayEqual } from './utils/isArrayEqual';
+import { createIntegroPromise } from './utils/createIntegroPromise';
 
 export type ClientConfig = {
   auth?: string | (() => string | undefined);
@@ -11,18 +12,18 @@ export type ClientConfig = {
   subscribeKey?: string;
 };
 
-const post = async ({
-  url,
-  config,
-  data,
-}: {
+export type PostOptions = {
   url: string;
   config: ClientConfig;
   data: {
     path: string[];
     args: unknown[];
   };
-}) => {
+};
+
+export const post = async (options: PostOptions | PostOptions[]) => {
+  const { url, config } = Array.isArray(options) ? options[0] : options;
+  const data = Array.isArray(options) ? options.map(o => o.data) : options.data;
   const init = typeof config.requestInit === 'function' ? config.requestInit() : config.requestInit;
   const auth = typeof config.auth === 'function' ? config.auth() : config.auth;
   const res = await fetch(url, {
@@ -119,13 +120,6 @@ export const createClient = <T extends IntegroApp>(url = '/', config: ClientConf
         },
         websocket,
       })
-      : post({
-        url,
-        config,
-        data: {
-          path,
-          args
-        },
-      })
+      : createIntegroPromise(post, { url, config, data: { path, args } }),
   );
 };
