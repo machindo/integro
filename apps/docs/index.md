@@ -5,7 +5,7 @@ layout: home
 hero:
   name: "Integro"
   text: "Seamless API integration with E2E integrity."
-  tagline: Convert your app into an API server+client with end-to-end type safety in just 2 lines.
+  tagline: Convert your functions into an API server with just 1 line of code.
   actions:
     - theme: brand
       text: What is integro?
@@ -28,3 +28,37 @@ features:
   - title: Server-side validation made easy
     details: Works with many popular validation libraries, including Zod, Typia, and Prisma's built-in validation.
 ---
+
+<script setup>
+  import { version } from '../../packages/core/package.json'
+</script>
+
+## Quick example
+
+::: code-group
+
+```ts-vue [Server]
+import { createServer } from 'node:http'
+import { createController } from 'integro'
+
+export const app = {
+  version: () => '{{ version }}',
+  greetings: {
+    sayHey: (name: string) => `Hey, ${name}!`,
+  },
+}
+
+createServer(createController(app)).listen()
+```
+
+```ts-vue [Client]
+import { createClient } from 'integro/client'
+import type { app } from './app'
+
+export const api = createClient<typeof app>()
+
+console.log(await api.version()) // -> "{{ version }}"
+console.log(await api.greetings.sayHey('Babe')) // -> "Hey, Babe!"
+```
+
+:::
