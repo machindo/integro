@@ -5,7 +5,7 @@ layout: home
 hero:
   name: "Integro"
   text: "Seamless API integration with E2E integrity."
-  tagline: Convert your functions into an API server with just 1 line of code.
+  tagline: Convert your functions into an API server plus a type-safe client in just 2 lines of code.
   actions:
     - theme: brand
       text: What is integro?
@@ -57,8 +57,12 @@ import type { app } from './app'
 
 export const api = createClient<typeof app>()
 
-console.log(await api.version()) // -> "{{ version }}"
-console.log(await api.greetings.sayHey('Babe')) // -> "Hey, Babe!"
+console.log(await api.version())
+// -> "{{ version }}"
+console.log(await api.greetings.sayHey('Babe'))
+// -> "Hey, Babe!"
+console.log(await api.greetings('Babe')) // Error: This expression is not callable. // [!code error]
+console.log(await api.greetings.sayHey(666)) // Error: Argument of type 'number' is not assignable to parameter of type 'string'. // [!code error]
 ```
 
 :::
