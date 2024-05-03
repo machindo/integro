@@ -108,11 +108,9 @@ express()
 
 ### Next.js
 
-You can even serve an integro app from a single route in next.js!
+You can even serve an integro app from a single route in Next.js (with app router)!
 
-::: code-group
-
-```ts [App router]
+```ts
 // src/api/route.ts
 
 import { createController } from 'integro';
@@ -120,20 +118,6 @@ import { app } from './app';
 
 export const POST = createController(app);
 ```
-
-```ts [Pages router]
-// pages/api/integro.ts
-
-import { createController } from 'integro';
-import { app } from './app';
-
-export default createController(app);
-```
-
-:::
-
-> [!CAUTION]
-> The pages router example is currently untested. But if it doesn't work out of the box, it can be made to work with little additional code.
 
 > [!NOTE]
 > If you're using Next.js with app router, take a look at server actions.
