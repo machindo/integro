@@ -2,15 +2,11 @@ import { pack, unpack } from 'msgpackr';
 import { IncomingMessage, ServerResponse } from "node:http";
 import { isResponseInitObject } from './respondWith';
 import { IntegroApp } from './types/IntegroApp';
+import { RequestData } from './types/RequestData';
 import { BodyParsingError, PathError } from './types/errors';
 import { everyItemIsString } from './utils/everyItemIsString';
 import { resolveProp } from './utils/resolveProp';
 import { toRequest } from './utils/toRequest';
-
-type RequestData = {
-  args: unknown[];
-  path: string[];
-};
 
 const accessHeaders = {
   "Access-Control-Allow-Methods": "OPTIONS, POST"
@@ -22,53 +18,73 @@ const getData = async (req: Request) => {
   return unpack(buffer) as { path: string[], args: unknown[] };
 };
 
+const encodeResponse = (data: unknown, responseInit?: ResponseInit) =>
+  new Response(pack(data), responseInit)
+
+const batchTypes: readonly string[] = [
+  'all',
+  'allSequential',
+  'allSettled',
+  'allSettledSequential',
+];
+
+const requestDataTypes: readonly string[] = [
+  ...batchTypes,
+  'request',
+];
+
 const assertRequestData = (data: unknown) => {
   if (!data || typeof data !== 'object')
-    throw new BodyParsingError('Could not parse body. Path must be an array of strings.');
-  if (!('path' in data) || !Array.isArray(data.path) || !everyItemIsString(data.path))
-    throw new BodyParsingError('Could not parse body. Path must be an array of strings.');
-  if (!('args' in data) || !Array.isArray(data.args))
-    throw new BodyParsingError('Could not parse body. Args must be an array.');
+    throw new BodyParsingError('Could not parse body. Body must be an object.');
+  if (!('type' in data) || typeof data.type !== 'string' || !requestDataTypes.includes(data.type))
+    throw new BodyParsingError('Could not parse body. Type must be one of the following: all, allSettled, allSequential, allSettledSequential, request.');
+  if (data.type === 'request') {
+    if (!('path' in data) || !Array.isArray(data.path) || !everyItemIsString(data.path))
+      throw new BodyParsingError('Could not parse body. Path must be an array of strings.');
+    if (!('args' in data) || !Array.isArray(data.args))
+      throw new BodyParsingError('Could not parse body. Args must be an array.');
+  } else if (!('data' in data) || !Array.isArray(data.data) || !data.data.every(assertRequestData)) {
+    throw new BodyParsingError('Could not parse body. Nested data is missing or malformed.');
+  }
 
   return data as RequestData;
 }
 
-const encodeResponse = (data: unknown, responseInit?: ResponseInit) =>
-  new Response(pack(data), responseInit)
+const handleRequestData = async (app: IntegroApp, request: Request, data: RequestData): Promise<unknown> => {
+  switch (data.type) {
+    case 'all':
+      return Promise.all(data.data.map(d => handleRequestData(app, request, d)));
+    case 'allSettled':
+      return Promise.allSettled(data.data.map(d => handleRequestData(app, request, d).catch(e => { throw e instanceof Error ? { message: e.message } : e; })));
+    case 'allSequential':
+      return Array.fromAsync(data.data.map(d => () => handleRequestData(app, request, d)), fn => fn());
+    case 'allSettledSequential':
+      return Array.fromAsync(data.data.map(d => () => handleRequestData(app, request, d)
+        .then(value => ({ status: 'fulfilled', value }))
+        .catch(e => ({ status: 'rejected', reason: e instanceof Error ? { message: e.message } : e }))),
+        fn => fn()
+      );
+    case 'request':
+    // Fall through
+  }
 
-const merge = <T extends object>(objects: T[]): T => Object.assign({}, ...objects);
+  const handler = await resolveProp({ app, path: data.path, context: { type: 'request', request } });
+
+  if (typeof handler !== "function") {
+    throw new PathError(`Path "${data.path.join('.')}" could not be found in the app.`);
+  }
+
+  return handler(...data.args);
+}
 
 const handleRequest = async (app: IntegroApp, request: Request): Promise<Response> => {
   try {
-    const rawData = await getData(request);
-    const isBatch = Array.isArray(rawData);
-    const inputs = isBatch ? rawData.map(assertRequestData) : [assertRequestData(rawData)];
-    const results = await Promise.allSettled(inputs.map(async ({ args, path }) => {
-      const handler = await resolveProp({ path, app, context: { type: 'request', request } });
+    const data = assertRequestData(await getData(request));
+    const res = await handleRequestData(app, request, data);
 
-      if (typeof handler !== "function") {
-        throw new PathError(`Path "${path.join('.')}" could not be found in the app.`);
-      }
-
-      return handler(...args);
-    }));
-
-    if (isBatch) {
-      return encodeResponse(
-        results.map(res => (res.status === 'fulfilled' && isResponseInitObject(res.value)) ? { ...res, value: res.value.data } : res),
-        merge(results.map(res => (res.status === 'fulfilled' && isResponseInitObject(res.value) && res.value.responseInit) || {}))
-      );
-    }
-
-    const res = results[0];
-
-    if (res.status === 'rejected') {
-      throw res.reason;
-    }
-
-    return isResponseInitObject(res.value)
-      ? encodeResponse(res.value.data, res.value.responseInit)
-      : encodeResponse(res.value);
+    return isResponseInitObject(res)
+      ? encodeResponse(res.data, res.responseInit)
+      : encodeResponse(res);
   } catch (e) {
     if (e instanceof BodyParsingError) {
       return encodeResponse({ message: e.message }, { status: 400 });

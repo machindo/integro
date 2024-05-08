@@ -2,9 +2,10 @@ import WebSocket from 'isomorphic-ws';
 import { pack, unpack } from 'msgpackr';
 import { IntegroApp } from './types/IntegroApp';
 import { IntegroClient } from './types/IntegroClient';
+import { RequestData } from './types/RequestData';
+import { createIntegroPromise } from './utils/createIntegroPromise';
 import { createProxy } from './utils/createProxy';
 import { isArrayEqual } from './utils/isArrayEqual';
-import { createIntegroPromise } from './utils/createIntegroPromise';
 
 export type ClientConfig = {
   auth?: string | (() => string | undefined);
@@ -15,13 +16,10 @@ export type ClientConfig = {
 export type PostOptions = {
   url: string;
   config: ClientConfig;
-  data: {
-    path: string[];
-    args: unknown[];
-  };
+  data: RequestData;
 };
 
-export const post = async (options: PostOptions | PostOptions[]) => {
+export const post = async (options: PostOptions) => {
   const { url, config } = Array.isArray(options) ? options[0] : options;
   const data = Array.isArray(options) ? options.map(o => o.data) : options.data;
   const init = typeof config.requestInit === 'function' ? config.requestInit() : config.requestInit;
@@ -120,6 +118,6 @@ export const createClient = <T extends IntegroApp>(url = '/', config: ClientConf
         },
         websocket,
       })
-      : createIntegroPromise(post, { url, config, data: { path, args } }),
+      : createIntegroPromise(post, { url, config, data: { type: 'request', path, args } }),
   );
 };

@@ -2,7 +2,10 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "lib": ["ESNext", "DOM"],
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "bundler",
@@ -18,5 +21,8 @@
     "allowJs": true,
     "emitDeclarationOnly": true
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "typiaPlugin.ts"
+  ]
 }

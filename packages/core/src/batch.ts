@@ -1,47 +1,72 @@
-import { PostOptions, post } from './createClient';
-import { IntegroPromise, createIntegroPromise, getIntegroPromiseArgs, setIntegroPromiseValue } from './utils/createIntegroPromise';
+import { assert } from 'typia';
+import { ClientConfig, PostOptions, post } from './createClient.js';
+import { BatchRequestData, RequestData } from './types/RequestData.js';
+import { IntegroPromise, createIntegroPromise, getIntegroPromiseArgs, isIntegroPromises, setIntegroPromiseValue } from './utils/createIntegroPromise.js';
 
-export type BatchedPromise<T extends readonly IntegroPromise<unknown>[] | []> =
-  IntegroPromise<{ -readonly [P in keyof T]: PromiseSettledResult<Awaited<T[P]>>; }>
-  & [...{ -readonly [P in keyof T]: IntegroPromise<Awaited<T[P]>>; }, () => BatchedPromise<T>];
+export type BatchPostOptions = {
+  url: string;
+  config: ClientConfig;
+  data: BatchRequestData;
+};
 
-export const batch = <T extends readonly IntegroPromise<unknown>[] | []>(
-  promises: T
-): BatchedPromise<T> => {
-  const batchPromise = createIntegroPromise((options: PostOptions[]) => {
-    return options.length ? post(options).then((results: PromiseSettledResult<unknown>[]) => {
-      results.forEach((result, index) => {
-        setIntegroPromiseValue(promises[index], result.status === 'fulfilled'
-          ? Promise.resolve(result.value)
-          : Promise.reject(Array.isArray(result.reason) ? { message: result.reason[1] ?? result.reason[0], details: result.reason } : result.reason));
+export type BatchedPromise<T extends readonly Promise<unknown>[] | [], Type extends Exclude<RequestData['type'], 'request'>> =
+  IntegroPromise<{ -readonly [P in keyof T]: Type extends 'all' | 'allSequential'
+    ? Awaited<T[P]>
+    : PromiseSettledResult<Awaited<T[P]>>;
+  }, [BatchPostOptions]>
+  & [...{ -readonly [P in keyof T]: IntegroPromise<Awaited<T[P]>>; }, () => BatchedPromise<T, Type>];
+
+const batch = <Type extends Exclude<RequestData['type'], 'request'>>(type: Type) =>
+  <T extends readonly Promise<unknown>[] | []>(promises: T): BatchedPromise<T, Type> => {
+    if (!isIntegroPromises(promises)) throw new Error('Only IntegroPromises can be batched');
+
+    const allPostOptions = promises.map(promise =>
+      assert<[PostOptions]>(getIntegroPromiseArgs(promise), () => new Error('Only IntegroPromises can be batched'))[0]
+    );
+    const executor = (options: BatchPostOptions) =>
+      post(options).then((results: unknown[]) => {
+        results.forEach((result, index) => {
+          if (type === 'all' || type === 'allSequential') {
+            setIntegroPromiseValue(promises[index], Promise.resolve(result));
+          } else {
+            const settledResult = result as PromiseSettledResult<unknown>;
+
+            setIntegroPromiseValue(promises[index], settledResult.status === 'fulfilled'
+              ? Promise.resolve(settledResult.value)
+              : Promise.reject(settledResult.reason));
+          }
+        });
+
+        return results;
+      });
+    const batchPromise = promises.length === 0
+      ? createIntegroPromise(() => [])
+      : createIntegroPromise(executor, {
+        url: allPostOptions[0].url,
+        config: allPostOptions[0].config,
+        data: {
+          type,
+          data: allPostOptions.map(({ data }) => data)
+        },
       });
 
-      return results;
-    }) : [];
-  }, promises.map(promise => {
-    const args = getIntegroPromiseArgs(promise)
+    Object.assign(batchPromise, {
+      *[Symbol.iterator]() {
+        for (const promise of promises) {
+          yield promise;
+        }
 
-    if (
-      !args
-      || !args[0]
-      || typeof args[0] !== 'object'
-      || !Object.hasOwn(args[0], 'config')
-      || !Object.hasOwn(args[0], 'data')
-      || !Object.hasOwn(args[0], 'url')
-    ) throw new Error('Only IntegroPromises can be batched');
-
-    return args[0] as PostOptions;
-  })) as BatchedPromise<T>;
-
-  Object.assign(batchPromise, {
-    *[Symbol.iterator]() {
-      for (const promise of promises) {
-        yield promise;
+        yield () => batchPromise;
       }
+    });
 
-      yield () => batchPromise;
-    }
-  });
+    return batchPromise as unknown as BatchedPromise<T, Type>;
+  };
 
-  return batchPromise;
-};
+export const all = batch('all');
+
+export const allSequential = batch('allSequential');
+
+export const allSettled = batch('allSettled');
+
+export const allSettledSequential = batch('allSettledSequential');

@@ -147,6 +147,7 @@ test('respondWith sets headers', async () => {
   const res = await fetch(`http://localhost:${server.port}`, {
     method: 'POST',
     body: pack({
+      type: 'request',
       path: ['auth', 'login', 'withUsernameAndPassword'],
       args: ['art', 'jazz'],
     }),
@@ -161,6 +162,7 @@ test('respondWith headers work with node http server', async () => {
   const res = await fetch(`http://localhost:${port}`, {
     method: 'POST',
     body: pack({
+      type: 'request',
       path: ['auth', 'login', 'withUsernameAndPassword'],
       args: ['art', 'jazz'],
     }),
@@ -176,6 +178,7 @@ test('respondWith sets status code', async () => {
   const res = await fetch(`http://localhost:${server.port}`, {
     method: 'POST',
     body: pack({
+      type: 'request',
       path: ['teapot', 'makeCoffee'],
       args: [],
     }),
@@ -190,6 +193,7 @@ test('respondWith status code works with node http server', async () => {
   const res = await fetch(`http://localhost:${port}`, {
     method: 'POST',
     body: pack({
+      type: 'request',
       path: ['teapot', 'makeCoffee'],
       args: [],
     }),
@@ -249,6 +253,7 @@ test('errors when request path is not present', async () => {
   const res = await fetch(`http://localhost:${server.port}`, {
     method: 'POST',
     body: pack({
+      type: 'request',
       args: [],
     }),
   });
@@ -262,6 +267,7 @@ test('errors when request path is not an array', async () => {
   const res = await fetch(`http://localhost:${server.port}`, {
     method: 'POST',
     body: pack({
+      type: 'request',
       path: 'version',
       args: [],
     }),
@@ -276,6 +282,7 @@ test('errors when request path contains non-strings', async () => {
   const res = await fetch(`http://localhost:${server.port}`, {
     method: 'POST',
     body: pack({
+      type: 'request',
       path: [0],
       args: [],
     }),
@@ -290,6 +297,7 @@ test('errors when request args is missing', async () => {
   const res = await fetch(`http://localhost:${server.port}`, {
     method: 'POST',
     body: pack({
+      type: 'request',
       path: ['version'],
     }),
   });
