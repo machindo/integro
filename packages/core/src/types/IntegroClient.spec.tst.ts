@@ -1,9 +1,9 @@
 import { expect, test } from "tstyche";
-import { batch } from '../batch.js';
 import { createClient } from '../createClient';
 import { respondWith } from '../respondWith';
 import { prisma } from '../tests/prisma.spec.js';
 import { unwrap } from '../unwrap';
+import { all, allSequential, allSettled, allSettledSequential } from '../batch.js';
 
 type Method<Args extends unknown[], Return> = ((...args: Args) => Promise<Return>) & { [Symbol.toStringTag]: string; }
 
@@ -106,10 +106,58 @@ test('infers nested types from PrismaPromise', async () => {
   } | null>();
 });
 
-test('infers nested types when using batch', async () => {
+test('infers nested types when using all', async () => {
   const api = { getVersion: () => '1.0.0', findArtist: prisma.artist.findFirst };
   const client = createClient<typeof api>();
-  const res = await batch([
+  const res = await all([
+    client.getVersion(),
+    client.findArtist({ select: { name: true, instruments: true } }),
+  ]);
+
+  expect(res).type.toEqual<[
+    string,
+    {
+      name: string; instruments: { id: string; name: string; family: string; artistId: string | null; }[]
+    } | null,
+  ]>();
+});
+
+test('infers nested types when using allSequential', async () => {
+  const api = { getVersion: () => '1.0.0', findArtist: prisma.artist.findFirst };
+  const client = createClient<typeof api>();
+  const res = await allSequential([
+    client.getVersion(),
+    client.findArtist({ select: { name: true, instruments: true } }),
+  ]);
+
+  expect(res).type.toEqual<[
+    string,
+    {
+      name: string; instruments: { id: string; name: string; family: string; artistId: string | null; }[]
+    } | null,
+  ]>();
+});
+
+test('infers nested types when using allSettled', async () => {
+  const api = { getVersion: () => '1.0.0', findArtist: prisma.artist.findFirst };
+  const client = createClient<typeof api>();
+  const res = await allSettled([
+    client.getVersion(),
+    client.findArtist({ select: { name: true, instruments: true } }),
+  ]);
+
+  expect(res).type.toEqual<[
+    PromiseSettledResult<string>,
+    PromiseSettledResult<{
+      name: string; instruments: { id: string; name: string; family: string; artistId: string | null; }[]
+    } | null>,
+  ]>();
+});
+
+test('infers nested types when using allSettledSequential', async () => {
+  const api = { getVersion: () => '1.0.0', findArtist: prisma.artist.findFirst };
+  const client = createClient<typeof api>();
+  const res = await allSettledSequential([
     client.getVersion(),
     client.findArtist({ select: { name: true, instruments: true } }),
   ]);

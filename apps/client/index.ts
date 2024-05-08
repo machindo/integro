@@ -1,5 +1,5 @@
 import { createApiClient } from '@integro/demo-server';
-import { batch } from '../../packages/core/dist/client';
+import { all } from '../../packages/core/dist/client';
 
 export const api = createApiClient('http://localhost:8000/api', {
   requestInit: {
@@ -7,7 +7,7 @@ export const api = createApiClient('http://localhost:8000/api', {
   }
 });
 
-console.log('batch', await batch([
+console.log('all', await all([
   api.artists.get('mingus'),
   api.artists.create({ name: 'john' }),
   api.artists.upsert({ json: { name: 'joe' }, params: { name: 'john' } }),

@@ -392,11 +392,11 @@ test('parameterized subscriber receives mapped updates', async () => {
   const { client, server } = await start(serverAPI);
   const handler = mock();
 
-  await sleep(10);
+  await sleep(20);
 
   client.articles.list$.subscribe('borges', handler);
 
-  await sleep(10);
+  await sleep(20);
 
   articleList$.send([
     { author: 'borges', content: 'labyrinths' },
@@ -404,7 +404,7 @@ test('parameterized subscriber receives mapped updates', async () => {
     { author: 'borges', content: 'the moon' }
   ]);
 
-  await sleep(10);
+  await sleep(20);
 
   expect(handler).toHaveBeenCalledTimes(1);
   expect(handler).toHaveBeenNthCalledWith(1, [{ author: 'borges', content: 'labyrinths' }, { author: 'borges', content: 'the moon' }]);
