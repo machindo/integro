@@ -33,6 +33,7 @@ export default defineConfig({
           { text: 'What is Integro?', link: '/introduction/what-is-integro' },
           { text: 'Getting Started', link: '/introduction/getting-started' },
           { text: 'Subscriptions', link: '/introduction/subscriptions' },
+          { text: 'Batching', link: '/introduction/batching' },
         ],
       },
       {
@@ -53,7 +54,10 @@ export default defineConfig({
             text: 'Client API',
             items: [
               { text: 'createClient', link: '/api/createClient' },
-              { text: 'batch', link: '/api/batch' },
+              { text: 'all', link: '/api/all' },
+              { text: 'allSequential', link: '/api/allSequential' },
+              { text: 'allSettled', link: '/api/allSettled' },
+              { text: 'allSettledSequential', link: '/api/allSettledSequential' },
             ]
           },
         ]

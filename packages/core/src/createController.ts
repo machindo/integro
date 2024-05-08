@@ -1,12 +1,13 @@
 import { pack, unpack } from 'msgpackr';
 import { IncomingMessage, ServerResponse } from "node:http";
-import { isResponseInitObject } from './respondWith';
+import { WithResponseInit, isResponseInitObject, respondWith } from './respondWith';
 import { IntegroApp } from './types/IntegroApp';
 import { RequestData } from './types/RequestData';
 import { BodyParsingError, PathError } from './types/errors';
 import { everyItemIsString } from './utils/everyItemIsString';
 import { resolveProp } from './utils/resolveProp';
 import { toRequest } from './utils/toRequest';
+import { mergeAll } from 'lodash/fp';
 
 const accessHeaders = {
   "Access-Control-Allow-Methods": "OPTIONS, POST"
@@ -77,14 +78,34 @@ const handleRequestData = async (app: IntegroApp, request: Request, data: Reques
   return handler(...data.args);
 }
 
+const reduceResponseInit = (data: unknown, responseInit: ResponseInit = {}): WithResponseInit<unknown> => {
+  if (isResponseInitObject(data)) {
+    return respondWith(data.data, { ...responseInit, ...data.responseInit });
+  }
+
+  if (data && typeof data === 'object' && 'value' in data && isResponseInitObject(data.value)) {
+    return reduceResponseInit(data.value, responseInit);
+  }
+
+  if (Array.isArray(data)) {
+    const array = data.map(d => reduceResponseInit(d, responseInit));
+
+    return respondWith(
+      array.map(({ data }) => data),
+      mergeAll([responseInit, ...array.map(({ responseInit }) => responseInit)]),
+    );
+  }
+
+  return respondWith(data, responseInit);
+}
+
 const handleRequest = async (app: IntegroApp, request: Request): Promise<Response> => {
   try {
     const data = assertRequestData(await getData(request));
     const res = await handleRequestData(app, request, data);
+    const response = reduceResponseInit(res);
 
-    return isResponseInitObject(res)
-      ? encodeResponse(res.data, res.responseInit)
-      : encodeResponse(res);
+    return encodeResponse(response.data, response.responseInit);
   } catch (e) {
     if (e instanceof BodyParsingError) {
       return encodeResponse({ message: e.message }, { status: 400 });

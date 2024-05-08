@@ -4,8 +4,12 @@ import getPort from 'get-port';
 import { createServer } from 'http';
 import { all, allSequential, allSettled, allSettledSequential } from '../batch.js';
 import { IntegroApp } from '../client.js';
-import { ClientConfig, createClient } from '../createClient.js';
+import { ClientConfig, PostOptions, createClient } from '../createClient.js';
 import { SubscriptionControllerConfig, createSubscriptionController } from '../createSubscriptionController.js';
+import { unwrap } from '../unwrap.js';
+import { respondWith } from '../respondWith.js';
+import { IntegroPromise, getIntegroPromiseArgs } from '../utils/createIntegroPromise.js';
+import { pack } from 'msgpackr';
 
 const createServerAPI = () => {
   const artists = [
@@ -24,6 +28,12 @@ const createServerAPI = () => {
       },
       findByName: async (name: string) => artists.find(a => a.name === name),
     },
+    private: unwrap(({ request }) => {
+      if (!request?.headers.get('Authorization')) throw new Error('User not authenticated')
+
+      return { secretArtists: () => 'Hush' }
+    }),
+    setHeaders: (name: string, value: string) => respondWith(undefined, { headers: { [name]: value } }),
   };
 
   return { serverAPI };
@@ -102,6 +112,63 @@ test.each(Object.entries({ allSettled, allSettledSequential }))
       { status: 'fulfilled', value: '0.1.0' },
       { status: 'rejected', reason: { message: 'id must be a non-empty string' } },
     ]);
+  });
+
+test.each(Object.entries({ all, allSequential }))
+  ('%s passes request object to sub-requests', async (_, batch) => {
+    const { serverAPI } = createServerAPI();
+    const { client } = await start(serverAPI, { requestInit: { headers: { Authorization: 'It is I' } } });
+
+    expect(batch([client.version(), client.private.secretArtists()]).then()).resolves.toEqual(['0.1.0', 'Hush']);
+  });
+
+test.each(Object.entries({ allSettled, allSettledSequential }))
+  ('%s passes request object to sub-requests', async (_, batch) => {
+    const { serverAPI } = createServerAPI();
+    const { client } = await start(serverAPI, { requestInit: { headers: { Authorization: 'It is I' } } });
+
+    expect(batch([client.version(), client.private.secretArtists()]).then()).resolves.toEqual([
+      { status: 'fulfilled', value: '0.1.0' },
+      { status: 'fulfilled', value: 'Hush' },
+    ]);
+  });
+
+test.each(Object.entries({ all, allSequential }))
+  ('%s fails when any sub-requests fail an auth guard', async (_, batch) => {
+    const { serverAPI } = createServerAPI();
+    const { client } = await start(serverAPI);
+
+    expect(batch([client.version(), client.private.secretArtists()]).then()).rejects.toThrowError('User not authenticated')
+  });
+
+test.each(Object.entries({ allSettled, allSettledSequential }))
+  ('%s succeeds even when some sub-requests fail an auth guard', async (_, batch) => {
+    const { serverAPI } = createServerAPI();
+    const { client } = await start(serverAPI);
+    const res = await batch([client.version(), client.private.secretArtists()]);
+
+    expect(res).toEqual([
+      { status: 'fulfilled', value: '0.1.0' },
+      { status: 'rejected', reason: { message: 'User not authenticated' } },
+    ]);
+  });
+
+test.each(Object.entries({ all, allSequential, allSettled, allSettledSequential }))
+  ('%s calls merge responseInit objects', async (_, batch) => {
+    const { serverAPI } = createServerAPI();
+    const { client, port } = await start(serverAPI);
+    const [{ data }] = getIntegroPromiseArgs(batch([
+      client.setHeaders('custom-a', '1'),
+      client.setHeaders('custom-b', '2'),
+      client.setHeaders('custom-a', '3'),
+    ]) as IntegroPromise<unknown>) as PostOptions[];
+    const res = await fetch(`http://localhost:${port}`, {
+      method: 'POST',
+      body: pack(data),
+    });
+
+    expect(res.headers.get('custom-a')).toBe('3');
+    expect(res.headers.get('custom-b')).toBe('2');
   });
 
 test.each(Object.entries({ all, allSequential, allSettled, allSettledSequential }))
