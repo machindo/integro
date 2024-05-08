@@ -22,7 +22,6 @@
     "emitDeclarationOnly": true
   },
   "include": [
-    "src",
-    "typiaPlugin.ts"
+    "src"
   ]
 }
