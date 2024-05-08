@@ -161,7 +161,7 @@ The leaf endpoint which will trigger a subscription. If creating subscribable en
 
 All client methods return instances of `IntegroPromise`. These are "lazy" promises, which means
 they only execute when you call `await`, `.then()`, `.catch()` or `.finally()`. This makes it
-possible to [batch API calls](./batch).
+possible to [batch API calls](/introduction/batching).
 
 ```ts
 const promise = api.artists.findById(validId); // not executed yet

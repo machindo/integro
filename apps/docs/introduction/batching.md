@@ -67,7 +67,7 @@ console.log(monk); // -> { status: 'rejected', reason: { message: 'name must be 
 ### `allSequential`
 
 `allSequential` is typed the same as [`Promise.all`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all).
-It acts like the [`all`](./all) function, with the exception that each request is made sequentially instead of all at once. This is useful when
+It acts like the `all` function, with the exception that each request is made sequentially instead of all at once. This is useful when
 you need to ensure one call is made before another, for example when creating a new record and then
 fetching a list of records that must contain the new one.
 
