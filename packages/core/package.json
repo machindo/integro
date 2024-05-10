@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@integro/eslint-config": "workspace:*",
+    "@microsoft/api-extractor": "^7.43.4",
     "@prisma/client": "5.13.0",
     "@types/bun": "latest",
     "@types/node": "latest",
