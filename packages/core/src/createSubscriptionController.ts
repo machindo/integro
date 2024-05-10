@@ -2,13 +2,14 @@ import type { ServerWebSocket } from 'bun';
 import { pack, unpack } from 'msgpackr';
 import { IncomingMessage } from 'node:http';
 import { Duplex } from 'node:stream';
-import WebSocket, { WebSocketServer } from 'ws';
+import type WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 import { IntegroApp } from './client.js';
 import { createController } from './createController.js';
 import { BodyParsingError } from './types/errors.js';
 import { everyItemIsString } from './utils/everyItemIsString.js';
-import { resolveProp } from './utils/resolveProp.js';
 import { rawDataToBuffer } from './utils/rawDataToBuffer.js';
+import { resolveProp } from './utils/resolveProp.js';
 
 export type SubscriptionControllerConfig = {
   subscribeKey?: string;

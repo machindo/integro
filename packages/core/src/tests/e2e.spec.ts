@@ -306,6 +306,21 @@ test('errors when request args is missing', async () => {
   expect(unpack(new Uint8Array(await res.arrayBuffer()))).toEqual({ message: 'Could not parse body. Args must be an array.' });
 });
 
+test('errors when request args is not an array', async () => {
+  const server = await serve(serverAPI);
+  const res = await fetch(`http://localhost:${server.port}`, {
+    method: 'POST',
+    body: pack({
+      type: 'request',
+      args: {},
+      path: ['version'],
+    }),
+  });
+
+  expect(res.status).toBe(400);
+  expect(unpack(new Uint8Array(await res.arrayBuffer()))).toEqual({ message: 'Could not parse body. Args must be an array.' });
+});
+
 test('errors when requested path is not a function', async () => {
   const { client } = await start(serverAPI);
 

@@ -8,7 +8,7 @@ import { ClientConfig, PostOptions, createClient } from '../createClient.js';
 import { SubscriptionControllerConfig, createSubscriptionController } from '../createSubscriptionController.js';
 import { unwrap } from '../unwrap.js';
 import { respondWith } from '../respondWith.js';
-import { IntegroPromise, getIntegroPromiseArgs } from '../utils/createIntegroPromise.js';
+import { IntegroPromise, createIntegroPromise, getIntegroPromiseArgs } from '../utils/createIntegroPromise.js';
 import { pack } from 'msgpackr';
 
 const createServerAPI = () => {
@@ -375,4 +375,8 @@ test('batches can be nested', async () => {
   ]);
 
   expect(controller).toHaveBeenCalledTimes(1);
-})
+});
+
+test('it throws when IntegroPromise args are not applicable', () => {
+  expect(() => all([createIntegroPromise(() => { })])).toThrowError('Only IntegroPromises can be batched');
+});

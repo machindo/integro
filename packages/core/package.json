@@ -1,6 +1,6 @@
 {
   "name": "integro",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "main": "dist/index.js",
   "browser": "dist/client.js",
   "module": "dist/index.js",
@@ -26,12 +26,9 @@
     "rack"
   ],
   "scripts": {
-    "build": "bun build:server && bun build:client && bun build:types",
-    "build:client": "bun build src/client.ts --outdir=dist --target browser --minify",
-    "build:server": "bun build src/index.ts --outdir=dist --target node --minify",
-    "build:types": "tsc",
+    "build": "bun --bun tsup",
     "lint": "eslint .",
-    "prepublishOnly": "rm -rf dist && rm tsconfig.tsbuildinfo; bun run build",
+    "prepublishOnly": "bun run build",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:types": "tstyche"
@@ -41,23 +38,18 @@
     "@prisma/client": "5.13.0",
     "@types/bun": "latest",
     "@types/node": "latest",
-    "bun-plugin-typia": "^0.1.0",
     "del-cli": "^5.1.0",
     "express": "^4.19.2",
     "get-port": "^7.1.0",
     "prisma": "^5.13.0",
     "tstyche": "^1.1.0",
+    "tsup": "^8.0.2",
     "type-fest": "^4.15.0",
     "typescript": "^5.0.0",
-    "typia": "^6.0.3",
     "undici-types": "^6.14.1"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
   },
   "dependencies": {
     "isomorphic-ws": "^5.0.0",
-    "lodash": "^4.17.21",
     "msgpackr": "^1.10.1",
     "ws": "^8.17.0"
   }

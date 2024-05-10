@@ -1,5 +1,2 @@
-preload = ["./typiaPlugin.ts"]
-
 [test]
 coverage = true
-preload = ["./typiaPlugin.ts"]

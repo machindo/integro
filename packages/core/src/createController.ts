@@ -4,10 +4,10 @@ import { WithResponseInit, isResponseInitObject, respondWith } from './respondWi
 import { IntegroApp } from './types/IntegroApp';
 import { RequestData } from './types/RequestData';
 import { BodyParsingError, PathError } from './types/errors';
-import { everyItemIsString } from './utils/everyItemIsString';
+import { assertRequestData } from './utils/assertRequestData';
 import { resolveProp } from './utils/resolveProp';
 import { toRequest } from './utils/toRequest';
-import { mergeAll } from 'lodash/fp';
+import { merge } from './utils/merge';
 
 const accessHeaders = {
   "Access-Control-Allow-Methods": "OPTIONS, POST"
@@ -21,35 +21,6 @@ const getData = async (req: Request) => {
 
 const encodeResponse = (data: unknown, responseInit?: ResponseInit) =>
   new Response(pack(data), responseInit)
-
-const batchTypes: readonly string[] = [
-  'all',
-  'allSequential',
-  'allSettled',
-  'allSettledSequential',
-];
-
-const requestDataTypes: readonly string[] = [
-  ...batchTypes,
-  'request',
-];
-
-const assertRequestData = (data: unknown) => {
-  if (!data || typeof data !== 'object')
-    throw new BodyParsingError('Could not parse body. Body must be an object.');
-  if (!('type' in data) || typeof data.type !== 'string' || !requestDataTypes.includes(data.type))
-    throw new BodyParsingError('Could not parse body. Type must be one of the following: all, allSettled, allSequential, allSettledSequential, request.');
-  if (data.type === 'request') {
-    if (!('path' in data) || !Array.isArray(data.path) || !everyItemIsString(data.path))
-      throw new BodyParsingError('Could not parse body. Path must be an array of strings.');
-    if (!('args' in data) || !Array.isArray(data.args))
-      throw new BodyParsingError('Could not parse body. Args must be an array.');
-  } else if (!('data' in data) || !Array.isArray(data.data) || !data.data.every(assertRequestData)) {
-    throw new BodyParsingError('Could not parse body. Nested data is missing or malformed.');
-  }
-
-  return data as RequestData;
-}
 
 const handleRequestData = async (app: IntegroApp, request: Request, data: RequestData): Promise<unknown> => {
   switch (data.type) {
@@ -92,7 +63,7 @@ const reduceResponseInit = (data: unknown, responseInit: ResponseInit = {}): Wit
 
     return respondWith(
       array.map(({ data }) => data),
-      mergeAll([responseInit, ...array.map(({ responseInit }) => responseInit)]),
+      merge([responseInit, ...array.map(({ responseInit }) => responseInit).filter(Boolean) as ResponseInit[]]),
     );
   }
 
