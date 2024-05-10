@@ -1,6 +1,6 @@
 {
   "name": "integro",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "main": "dist/index.js",
   "browser": "dist/client.js",
   "module": "dist/index.js",
@@ -14,7 +14,10 @@
   ],
   "license": "MIT",
   "homepage": "https://integro.js.org/",
-  "repository": "jpsilva/integro",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jpsilva/integro.git"
+  },
   "keywords": [
     "web",
     "app",
@@ -28,7 +31,7 @@
   "scripts": {
     "build": "bun --bun tsup",
     "lint": "eslint .",
-    "prepublishOnly": "bun run build",
+    "prepublishOnly": "bun --bun tsup",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:types": "tstyche"
